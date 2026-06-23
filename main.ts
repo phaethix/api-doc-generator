@@ -1,24 +1,7 @@
-// main.ts
-import { resolveRoute } from "./router.ts";
-import { logRequest } from "./middleware/logger.ts";
+#!/usr/bin/env -S deno run -A main.ts
+import { start } from "$fresh/server.ts";
+import manifest from "./fresh.gen.ts";
+import config from "./fresh.config.ts";
 
-export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  const start = performance.now();
-  const route = resolveRoute(req.method, url);
-
-  let res: Response;
-  if (route) {
-    res = await route(req);
-  } else {
-    res = new Response("Not Found", { status: 404 });
-  }
-
-  logRequest(req, res, Math.round(performance.now() - start));
-  return res;
-}
-
-if (import.meta.main) {
-  Deno.serve({ port: 8080 }, handler);
-  console.log("🚀 API Doc Generator running on http://localhost:8080");
-}
+console.log("🚀 API Doc Generator running on http://localhost:8080");
+await start(manifest, config);
