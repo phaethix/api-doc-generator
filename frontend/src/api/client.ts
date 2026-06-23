@@ -1,53 +1,39 @@
 import type {
   ApiSpec,
-  GenerateResponse,
   HealthResponse,
   OutputFormat,
 } from "../types";
 
-const getBaseUrl = (): string => {
-  if (import.meta.env.DEV) {
-    return "";
+const BASE_URL = "";
+
+async function parseErrorResponse(res: Response): Promise<string> {
+  let errorMsg = `请求失败: ${res.status}`;
+  try {
+    const errData = await res.json();
+    if (errData.error) {
+      errorMsg = errData.error;
+      if (errData.field) {
+        errorMsg += ` (字段: ${errData.field})`;
+      }
+    }
+  } catch {
+    // ignore
   }
-  return "";
-};
+  return errorMsg;
+}
 
-const BASE_URL = getBaseUrl();
-
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, {
-    ...options,
+export async function checkHealth(): Promise<HealthResponse> {
+  const res = await fetch(`${BASE_URL}/health`, {
     headers: {
       "Content-Type": "application/json",
-      ...options.headers,
     },
   });
 
   if (!res.ok) {
-    let errorMsg = `请求失败: ${res.status}`;
-    try {
-      const errData = await res.json();
-      if (errData.error) {
-        errorMsg = errData.error;
-        if (errData.field) {
-          errorMsg += ` (字段: ${errData.field})`;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(errorMsg);
+    throw new Error(await parseErrorResponse(res));
   }
 
-  return res.json() as Promise<T>;
-}
-
-export async function checkHealth(): Promise<HealthResponse> {
-  return request<HealthResponse>("/health");
+  return res.json() as Promise<HealthResponse>;
 }
 
 export async function generateDoc(
@@ -65,19 +51,7 @@ export async function generateDoc(
   });
 
   if (!res.ok) {
-    let errorMsg = `生成失败: ${res.status}`;
-    try {
-      const errData = await res.json();
-      if (errData.error) {
-        errorMsg = errData.error;
-        if (errData.field) {
-          errorMsg += ` (字段: ${errData.field})`;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(errorMsg);
+    throw new Error(await parseErrorResponse(res));
   }
 
   const contentType = res.headers.get("Content-Type") || "text/plain";
@@ -101,16 +75,7 @@ export async function importOpenAPI(
   });
 
   if (!res.ok) {
-    let errorMsg = `导入失败: ${res.status}`;
-    try {
-      const errData = await res.json();
-      if (errData.error) {
-        errorMsg = errData.error;
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(errorMsg);
+    throw new Error(await parseErrorResponse(res));
   }
 
   const contentType = res.headers.get("Content-Type") || "text/plain";
@@ -118,5 +83,3 @@ export async function importOpenAPI(
 
   return { content, contentType };
 }
-
-export type { GenerateResponse };

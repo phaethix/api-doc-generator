@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { markdownToHtml } from "../utils/markdown";
 import type { OutputFormat } from "../types";
 
@@ -19,12 +19,24 @@ export function OutputPanel({
   onCopy,
   onDownload,
 }: OutputPanelProps) {
-  const renderedHtml = useMemo(() => {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // 当 HTML 内容变更时，更新 iframe
+  useEffect(() => {
+    if (format === "html" && iframeRef.current && content) {
+      const iframe = iframeRef.current;
+      const doc = iframe.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(content);
+        doc.close();
+      }
+    }
+  }, [content, format]);
+
+  const renderedContent = useMemo(() => {
     if (format === "markdown") {
       return markdownToHtml(content);
-    }
-    if (format === "html") {
-      return content;
     }
     if (format === "json") {
       try {
@@ -90,17 +102,39 @@ export function OutputPanel({
     );
   }
 
-  if (format === "markdown" || format === "html") {
+  // HTML 格式：使用 iframe 展示完整 HTML 文档
+  if (format === "html") {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
           <span className="text-sm font-medium text-gray-700">
             预览
-            <span className="ml-2 text-xs text-gray-400">
-              {format === "markdown" ? "Markdown → HTML" : "HTML"}
-            </span>
+            <span className="ml-2 text-xs text-gray-400">HTML</span>
           </span>
           <div className="flex gap-2">
+            <button
+              onClick={() => {
+                // 在浏览器中打开新窗口
+                const newWindow = window.open();
+                if (newWindow) {
+                  newWindow.document.write(content);
+                  newWindow.document.close();
+                  newWindow.document.title = "API 文档 (HTML)";
+                }
+              }}
+              className="btn-ghost text-xs"
+              title="在新窗口中打开"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              打开
+            </button>
             <button
               onClick={onCopy}
               className="btn-ghost text-xs"
@@ -131,17 +165,25 @@ export function OutputPanel({
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto markdown-body" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+        <iframe
+          ref={iframeRef}
+          className="flex-1 w-full border border-gray-200 rounded-lg bg-white"
+          sandbox="allow-same-origin"
+          title="HTML 预览"
+        />
       </div>
     );
   }
 
-  // JSON
+  // Markdown 或 JSON 格式
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
         <span className="text-sm font-medium text-gray-700">
-          JSON 输出
+          预览
+          <span className="ml-2 text-xs text-gray-400">
+            {format === "markdown" ? "Markdown → HTML" : "JSON"}
+          </span>
         </span>
         <div className="flex gap-2">
           <button
@@ -175,8 +217,8 @@ export function OutputPanel({
         </div>
       </div>
       <div
-        className="flex-1 overflow-auto"
-        dangerouslySetInnerHTML={{ __html: renderedHtml }}
+        className="flex-1 overflow-auto markdown-body"
+        dangerouslySetInnerHTML={{ __html: renderedContent }}
       />
     </div>
   );
