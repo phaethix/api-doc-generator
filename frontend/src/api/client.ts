@@ -1,0 +1,85 @@
+import type {
+  ApiSpec,
+  HealthResponse,
+  OutputFormat,
+} from "../types";
+
+const BASE_URL = "";
+
+async function parseErrorResponse(res: Response): Promise<string> {
+  let errorMsg = `请求失败: ${res.status}`;
+  try {
+    const errData = await res.json();
+    if (errData.error) {
+      errorMsg = errData.error;
+      if (errData.field) {
+        errorMsg += ` (字段: ${errData.field})`;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return errorMsg;
+}
+
+export async function checkHealth(): Promise<HealthResponse> {
+  const res = await fetch(`${BASE_URL}/health`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+
+  return res.json() as Promise<HealthResponse>;
+}
+
+export async function generateDoc(
+  spec: ApiSpec,
+  format: OutputFormat,
+): Promise<{ content: string; contentType: string }> {
+  const url = `/generate?format=${format}`;
+
+  const res = await fetch(`${BASE_URL}${url}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(spec),
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+
+  const contentType = res.headers.get("Content-Type") || "text/plain";
+  const content = await res.text();
+
+  return { content, contentType };
+}
+
+export async function importOpenAPI(
+  openApiDoc: unknown,
+  format: OutputFormat,
+): Promise<{ content: string; contentType: string }> {
+  const url = `/import/openapi?format=${format}`;
+
+  const res = await fetch(`${BASE_URL}${url}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(openApiDoc),
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
+
+  const contentType = res.headers.get("Content-Type") || "text/plain";
+  const content = await res.text();
+
+  return { content, contentType };
+}
