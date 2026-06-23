@@ -1,0 +1,22 @@
+# Fresh build output
+_fresh/
+
+# Deno
+node_modules/
+deno_cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local
