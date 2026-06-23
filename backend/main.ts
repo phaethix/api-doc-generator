@@ -1,10 +1,20 @@
 // main.ts
 import { resolveRoute } from "./router.ts";
 import { logRequest } from "./middleware/logger.ts";
+import { isApiPath, corsHeaders } from "./shared/utils.ts";
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const start = performance.now();
+
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders(),
+    });
+  }
+
   const route = resolveRoute(req.method, url);
 
   let res: Response;
@@ -17,7 +27,10 @@ export async function handler(req: Request): Promise<Response> {
         JSON.stringify({ error: "Internal server error" }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders(),
+          },
         },
       );
     }
@@ -29,7 +42,10 @@ export async function handler(req: Request): Promise<Response> {
         JSON.stringify({ error: `Route not found: ${req.method} ${url.pathname}` }),
         {
           status: 404,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders(),
+          },
         },
       );
     } else {
@@ -40,18 +56,6 @@ export async function handler(req: Request): Promise<Response> {
 
   logRequest(req, res, Math.round(performance.now() - start));
   return res;
-}
-
-/**
- * Determine if a path is an API endpoint.
- * API endpoints are: /health, /generate, /import/*
- */
-function isApiPath(pathname: string): boolean {
-  return pathname === "/health" ||
-         pathname.startsWith("/generate") ||
-         pathname.startsWith("/import/") ||
-         pathname === "/import" ||
-         pathname.startsWith("/api/");
 }
 
 if (import.meta.main) {
