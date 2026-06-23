@@ -61,7 +61,7 @@ export async function handler(req: Request): Promise<Response> {
 if (import.meta.main) {
   const port = parseInt(Deno.env.get("PORT") ?? "8080");
   Deno.serve({ port }, handler);
-  console.log(`🚀 API Doc Generator running on http://localhost:${port}`);
-  console.log(`   Frontend:  http://localhost:${port}/`);
-  console.log(`   API:       http://localhost:${port}/health, /generate, /import/openapi`);
+  console.log(`API Doc Generator running on http://localhost:${port}`);
+  console.log(`  Frontend: http://localhost:${port}/`);
+  console.log(`  API:      http://localhost:${port}/health, /generate, /import/openapi`);
 }
