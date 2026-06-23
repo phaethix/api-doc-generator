@@ -1,8 +1,8 @@
 // handlers/generate.ts
-import { parseBody, isApiSpec, ParseError } from "../core/parser.ts";
+import { parseBody, isApiSpec } from "../core/parser.ts";
 import { generate } from "../core/generator.ts";
 import { render } from "../core/renderer.ts";
-import { OutputFormat } from "../types/api_spec.ts";
+import { resolveFormat, CONTENT_TYPES, readBody, handleApiError, corsHeaders } from "../shared/utils.ts";
 
 // ── Custom business error ─────────────────────────
 export class GenerateError extends Error {
@@ -15,71 +15,24 @@ export class GenerateError extends Error {
   }
 }
 
-// ── Content-Type lookup ───────────────────────────
-const CONTENT_TYPES: Record<OutputFormat, string> = {
-  [OutputFormat.Markdown]: "text/markdown; charset=utf-8",
-  [OutputFormat.HTML]:     "text/html; charset=utf-8",
-  [OutputFormat.JSON]:     "application/json; charset=utf-8",
-};
-
 // ── Main handler ──────────────────────────────────
 export async function handleGenerate(req: Request): Promise<Response> {
   const format = resolveFormat(req);
 
   try {
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
+    const body = await readBody(req);
     const spec = parseBody(body, isApiSpec);
     const doc  = generate(spec);
     const output = render(doc, format);
 
     return new Response(output, {
       status: 200,
-      headers: { "Content-Type": CONTENT_TYPES[format] },
+      headers: {
+        "Content-Type": CONTENT_TYPES[format],
+        ...corsHeaders(),
+      },
     });
   } catch (e) {
-    if (e instanceof ParseError) {
-      return new Response(
-        JSON.stringify({ error: e.message, field: e.field }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    if (e instanceof GenerateError) {
-      return new Response(
-        JSON.stringify({ error: e.message }),
-        { status: e.status, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    // Unexpected errors → 500 + log
-    console.error("Unexpected error in /generate:", e);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return handleApiError(e, "/generate");
   }
-}
-
-// ── Format resolution: query param → Accept header → default
-function resolveFormat(req: Request): OutputFormat {
-  const url = new URL(req.url);
-  const q = url.searchParams.get("format")?.toLowerCase();
-
-  if (q === "html") return OutputFormat.HTML;
-  if (q === "json") return OutputFormat.JSON;
-  if (q === "markdown") return OutputFormat.Markdown;
-
-  // Fallback: Accept header
-  const accept = req.headers.get("Accept") ?? "";
-  if (accept.includes("text/html")) return OutputFormat.HTML;
-  if (accept.includes("application/json")) return OutputFormat.JSON;
-
-  return OutputFormat.Markdown;
 }

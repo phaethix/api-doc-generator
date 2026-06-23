@@ -2,6 +2,7 @@
 // Serves the built frontend SPA and its assets.
 
 import { contentType } from "jsr:@std/media-types@1";
+import { isApiPath } from "../shared/utils.ts";
 
 // Resolve the path to frontend/dist relative to the project root.
 // In Deno, import.meta.url gives the file:// URL of the current module.
@@ -111,18 +112,6 @@ async function serveFile(filePath: string): Promise<Response | null> {
     console.error("Error serving file:", e);
     throw e;
   }
-}
-
-/**
- * Determine if a path is an API endpoint.
- * API endpoints are: /health, /generate, /import/*
- */
-function isApiPath(pathname: string): boolean {
-  return pathname === "/health" ||
-         pathname.startsWith("/generate") ||
-         pathname.startsWith("/import/") ||
-         pathname === "/import" ||
-         pathname.startsWith("/api/");
 }
 
 /**
