@@ -103,91 +103,111 @@ JSON Spec (OpenAPI or custom)
 
 ```
 api-doc-generator/
-├── main.ts                 # Deno 应用入口
-├── router.ts               # URLPattern 路由配置
-├── deno.json               # Deno 配置 + tasks
-├── deno.lock               # 依赖锁定
-├── handlers/               # HTTP 请求处理器
-│   ├── generate.ts         # /api/generate 文档生成
-│   ├── health.ts           # /api/health 健康检查
-│   ├── openapi.ts          # /api/import/openapi OpenAPI 导入
-│   └── static.ts           # 静态文件服务
-├── core/                   # 核心业务逻辑
-│   ├── generator.ts        # ApiSpec → DocNode 转换
-│   ├── parser.ts           # 类型守卫与解析
-│   └── renderer.ts         # DocNode → 文档渲染
-├── adapters/               # 适配器
-│   └── openapi.ts          # OpenAPI 3.x → ApiSpec 转换
-├── middleware/             # 中间件
-│   └── logger.ts           # 请求日志
-├── types/                  # 类型定义
-│   ├── api_spec.ts         # ApiSpec 类型
-│   └── doc_node.ts         # DocNode 类型
-├── tests/                  # 测试文件
-│   ├── generator_test.ts
-│   ├── integration_test.ts
-│   ├── openapi_test.ts
-│   ├── parser_test.ts
-│   ├── renderer_test.ts
-│   └── static_test.ts
-└── frontend/               # React 前端 (独立 Vite 项目)
-    ├── src/
-    │   ├── App.tsx         # 主应用组件
-    │   ├── main.tsx        # 入口文件
-    │   ├── index.css       # Tailwind 样式
-    │   ├── types.ts        # 前端类型
-    │   ├── api/
-    │   │   └── client.ts   # API 客户端
-    │   ├── components/
-    │   │   ├── Header.tsx
-    │   │   ├── JsonEditor.tsx
-    │   │   ├── FormatSelector.tsx
-    │   │   ├── OutputPanel.tsx
-    │   │   └── Toast.tsx
-    │   └── utils/
-    │       ├── markdown.ts # Markdown 渲染
-    │       └── sample.ts   # 示例数据
-    ├── index.html
-    ├── package.json
-    ├── vite.config.ts      # 含 proxy 到后端
-    ├── tailwind.config.js
-    └── tsconfig.json
+├── backend/                 # Deno 后端
+│   ├── main.ts             # 应用入口
+│   ├── router.ts           # URLPattern 路由配置
+│   ├── deno.json           # Deno 配置 + tasks
+│   ├── deno.lock           # 依赖锁定
+│   ├── handlers/           # HTTP 请求处理器
+│   │   ├── generate.ts     # /api/generate 文档生成
+│   │   ├── health.ts       # /api/health 健康检查
+│   │   ├── openapi.ts      # /api/import/openapi OpenAPI 导入
+│   │   └── static.ts       # 静态文件服务
+│   ├── core/               # 核心业务逻辑
+│   │   ├── generator.ts    # ApiSpec → DocNode 转换
+│   │   ├── parser.ts       # 类型守卫与解析
+│   │   └── renderer.ts     # DocNode → 文档渲染
+│   ├── adapters/           # 适配器
+│   │   └── openapi.ts      # OpenAPI 3.x → ApiSpec 转换
+│   ├── middleware/         # 中间件
+│   │   └── logger.ts       # 请求日志
+│   ├── types/              # 类型定义
+│   │   ├── api_spec.ts     # ApiSpec 类型
+│   │   └── doc_node.ts     # DocNode 类型
+│   └── tests/              # 测试文件
+│       ├── generator_test.ts
+│       ├── integration_test.ts
+│       ├── openapi_test.ts
+│       ├── parser_test.ts
+│       ├── renderer_test.ts
+│       └── static_test.ts
+│
+├── frontend/               # React 前端 (独立 Vite 项目)
+│   ├── src/
+│   │   ├── App.tsx         # 主应用组件
+│   │   ├── main.tsx        # 入口文件
+│   │   ├── index.css       # Tailwind 样式
+│   │   ├── types.ts        # 前端类型
+│   │   ├── api/
+│   │   │   └── client.ts   # API 客户端
+│   │   ├── components/
+│   │   │   ├── Header.tsx
+│   │   │   ├── JsonEditor.tsx
+│   │   │   ├── FormatSelector.tsx
+│   │   │   ├── OutputPanel.tsx
+│   │   │   ├── Toast.tsx
+│   │   │   └── ErrorBoundary.tsx
+│   │   └── utils/
+│   │       ├── markdown.ts # Markdown 渲染
+│   │       └── sample.ts   # 示例数据
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts      # 含 proxy 到后端
+│   ├── tailwind.config.js
+│   └── tsconfig.json
+│
+├── scripts/                # 脚本目录
+│   └── dev.sh              # 开发环境管理脚本
+│
+├── config/                 # 配置目录
+│   └── env.example         # 环境变量模板
+│
+├── examples/               # 示例文件
+│   └── openapi/
+│       └── petstore.json   # OpenAPI 示例
+│
+├── docs/                   # 文档目录
+│
+├── Dockerfile              # Docker 配置
+├── docker-compose.yml      # Docker Compose 配置
+├── .dockerignore           # Docker 忽略文件
+└── README.md               # 项目说明
 ```
 
 ## 🚀 快速开始
 
-本项目提供了一个便捷的开发环境管理脚本 `dev.sh`，可以一键启动、停止前后端服务。
+本项目提供了一个便捷的开发环境管理脚本 `scripts/dev.sh`，可以一键启动、停止前后端服务。
 
 ```bash
 # 启动前后端（自动检测并安装依赖）
-./dev.sh start
+./scripts/dev.sh start
 
 # 查看服务状态
-./dev.sh status
+./scripts/dev.sh status
 
 # 停止所有服务
-./dev.sh stop
+./scripts/dev.sh stop
 
 # 重启所有服务
-./dev.sh restart
+./scripts/dev.sh restart
 
 # 仅启动/停止后端
-./dev.sh start:backend
-./dev.sh stop:backend
+./scripts/dev.sh start:backend
+./scripts/dev.sh stop:backend
 
 # 仅启动/停止前端
-./dev.sh start:frontend
-./dev.sh stop:frontend
+./scripts/dev.sh start:frontend
+./scripts/dev.sh stop:frontend
 
 # 查看实时日志
-./dev.sh logs backend    # 后端日志
-./dev.sh logs frontend   # 前端日志
+./scripts/dev.sh logs backend    # 后端日志
+./scripts/dev.sh logs frontend   # 前端日志
 
 # 清理日志和 PID 文件
-./dev.sh clean
+./scripts/dev.sh clean
 
 # 查看所有命令
-./dev.sh help
+./scripts/dev.sh help
 ```
 
 启动后访问：
@@ -221,12 +241,14 @@ cd ..
 #### 3. 启动后端服务
 
 ```bash
+cd backend
 deno run --allow-net --allow-read --allow-env main.ts
 ```
 
 或者使用任务命令：
 
 ```bash
+cd backend
 deno task start
 ```
 
@@ -241,6 +263,7 @@ deno task start
 #### 后端热重载
 
 ```bash
+cd backend
 deno task dev
 ```
 
@@ -342,12 +365,14 @@ Content-Type: application/json
 运行所有测试：
 
 ```bash
+cd backend
 deno test --allow-net --allow-read
 ```
 
 运行特定测试：
 
 ```bash
+cd backend
 deno test --allow-net --allow-read tests/integration_test.ts
 ```
 
@@ -415,7 +440,21 @@ deno test --allow-net --allow-read tests/integration_test.ts
 
 ### 环境变量
 
-- `PORT` — 服务端口（默认：8080）
+复制 `config/env.example` 为 `.env` 并按需修改：
+
+```bash
+cp config/env.example .env
+```
+
+可用配置项：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `PORT` | 8080 | 服务端口 |
+| `HOST` | 0.0.0.0 | 服务主机地址 |
+| `DENO_ENV` | development | 运行环境 |
+| `LOG_LEVEL` | info | 日志级别 |
+| `CORS_ALLOWED_ORIGINS` | http://localhost:5173 | CORS 允许的来源 |
 
 ### Deno 权限
 
@@ -434,28 +473,24 @@ deno test --allow-net --allow-read tests/integration_test.ts
 cd frontend && npm run build && cd ..
 
 # 启动服务
+cd backend
 deno run --allow-net --allow-read --allow-env main.ts
 ```
 
-### Docker 部署（可选）
+### Docker 部署
 
-```dockerfile
-FROM denoland/deno:alpine-1.40.0
+项目包含完整的 Docker 配置，可以直接使用：
 
-WORKDIR /app
+```bash
+# 使用 docker-compose 一键启动
+docker-compose up --build
 
-# 复制项目文件
-COPY . .
-
-# 构建前端
-RUN cd frontend && npm install && npm run build
-
-# 暴露端口
-EXPOSE 8080
-
-# 启动应用
-CMD ["run", "--allow-net", "--allow-read", "--allow-env", "main.ts"]
+# 或手动构建
+docker build -t api-doc-generator .
+docker run -p 8080:8080 api-doc-generator
 ```
+
+访问 `http://localhost:8080` 使用应用。
 
 ## 🔀 与其他分支的对比
 

@@ -5,7 +5,8 @@ import { contentType } from "jsr:@std/media-types@1";
 
 // Resolve the path to frontend/dist relative to the project root.
 // In Deno, import.meta.url gives the file:// URL of the current module.
-const STATIC_ROOT = new URL("../frontend/dist/", import.meta.url);
+// Since this file is in backend/handlers/, we need to go up two levels.
+const STATIC_ROOT = new URL("../../frontend/dist/", import.meta.url);
 
 // Default files to serve when the path ends with /
 const INDEX_FILES = ["index.html"];
