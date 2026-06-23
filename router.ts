@@ -1,6 +1,8 @@
 // router.ts
 import { handleGenerate } from "./handlers/generate.ts";
 import { handleHealth } from "./handlers/health.ts";
+import { handleOpenAPIImport } from "./handlers/openapi.ts";
+import { handleStatic } from "./handlers/static.ts";
 
 type Handler = (req: Request) => Response | Promise<Response>;
 
@@ -20,6 +22,16 @@ const routes: Route[] = [
     method: "POST",
     pattern: new URLPattern({ pathname: "/generate" }),
     handler: handleGenerate,
+  },
+  {
+    method: "POST",
+    pattern: new URLPattern({ pathname: "/import/openapi" }),
+    handler: handleOpenAPIImport,
+  },
+  {
+    method: "GET",
+    pattern: new URLPattern({ pathname: "/*" }),
+    handler: handleStatic,
   },
 ];
 
