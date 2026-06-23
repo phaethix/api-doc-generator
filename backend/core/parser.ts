@@ -15,7 +15,7 @@ export function parseBody<T>(
   guard: (x: unknown) => x is T,
 ): T {
   if (!guard(raw)) {
-    throw new ParseError("Request body does not match expected schema");
+    throw new ParseError("Request body does not match expected schema", "body");
   }
   return raw;
 }
