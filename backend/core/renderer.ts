@@ -47,7 +47,9 @@ function renderMarkdown(doc: DocNode): string {
       lines.push("|------|----|------|----------|-------------|");
       for (const p of ep.parameters) {
         lines.push(
-          `| ${p.name} | ${p.location} | ${p.type} | ${p.required ? "Yes" : "No"} | ${p.description ?? "-"} |`,
+          `| ${p.name} | ${p.location} | ${p.type} | ${
+            p.required ? "Yes" : "No"
+          } | ${p.description ?? "-"} |`,
         );
       }
     }
@@ -70,7 +72,9 @@ function renderMarkdown(doc: DocNode): string {
     lines.push("| Status | Description | Content-Type |");
     lines.push("|--------|-------------|--------------|");
     for (const r of ep.responses) {
-      lines.push(`| ${r.status} | ${r.description} | ${r.contentType ?? "-"} |`);
+      lines.push(
+        `| ${r.status} | ${r.description} | ${r.contentType ?? "-"} |`,
+      );
     }
     lines.push("");
   }
@@ -127,37 +131,60 @@ function renderHTML(doc: DocNode): string {
 
   for (const ep of doc.endpoints) {
     html += `<div class="endpoint-section">\n`;
-    html += `<h2><span class="method ${ep.method.toLowerCase()}">${ep.method}</span> <code>${escapeHtml(ep.path)}</code></h2>\n`;
+    html +=
+      `<h2><span class="method ${ep.method.toLowerCase()}">${ep.method}</span> <code>${
+        escapeHtml(ep.path)
+      }</code></h2>\n`;
     html += `<p><strong>${escapeHtml(ep.summary)}</strong></p>\n`;
     if (ep.description) {
       html += `<p>${escapeHtml(ep.description)}</p>\n`;
     }
     if (ep.tags.length > 0) {
-      html += `<p>${ep.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join(" ")}</p>\n`;
+      html += `<p>${
+        ep.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join(
+          " ",
+        )
+      }</p>\n`;
     }
 
     if (ep.parameters.length > 0) {
-      html += `<h3>Parameters</h3>\n<table>\n<tr><th>Name</th><th>In</th><th>Type</th><th>Required</th><th>Description</th></tr>\n`;
+      html +=
+        `<h3>Parameters</h3>\n<table>\n<tr><th>Name</th><th>In</th><th>Type</th><th>Required</th><th>Description</th></tr>\n`;
       for (const p of ep.parameters) {
-        html += `<tr><td><code>${escapeHtml(p.name)}</code></td><td>${p.location}</td><td><code>${escapeHtml(p.type)}</code></td><td>${p.required ? "Yes" : "No"}</td><td>${escapeHtml(p.description ?? "-")}</td></tr>\n`;
+        html += `<tr><td><code>${escapeHtml(p.name)}</code></td><td>${
+          escapeHtml(p.location)
+        }</td><td><code>${escapeHtml(p.type)}</code></td><td>${
+          p.required ? "Yes" : "No"
+        }</td><td>${escapeHtml(p.description ?? "-")}</td></tr>\n`;
       }
       html += `</table>\n`;
     }
 
     if (ep.requestBody) {
       html += `<h3>Request Body</h3>\n<ul>\n`;
-      html += `<li><strong>Content-Type:</strong> <code>${escapeHtml(ep.requestBody.contentType)}</code></li>\n`;
-      html += `<li><strong>Type:</strong> <code>${escapeHtml(ep.requestBody.type)}</code></li>\n`;
-      html += `<li><strong>Required:</strong> ${ep.requestBody.required ? "Yes" : "No"}</li>\n`;
+      html += `<li><strong>Content-Type:</strong> <code>${
+        escapeHtml(ep.requestBody.contentType)
+      }</code></li>\n`;
+      html += `<li><strong>Type:</strong> <code>${
+        escapeHtml(ep.requestBody.type)
+      }</code></li>\n`;
+      html += `<li><strong>Required:</strong> ${
+        ep.requestBody.required ? "Yes" : "No"
+      }</li>\n`;
       if (ep.requestBody.description) {
-        html += `<li><strong>Description:</strong> ${escapeHtml(ep.requestBody.description)}</li>\n`;
+        html += `<li><strong>Description:</strong> ${
+          escapeHtml(ep.requestBody.description)
+        }</li>\n`;
       }
       html += `</ul>\n`;
     }
 
-    html += `<h3>Responses</h3>\n<table>\n<tr><th>Status</th><th>Description</th><th>Content-Type</th></tr>\n`;
+    html +=
+      `<h3>Responses</h3>\n<table>\n<tr><th>Status</th><th>Description</th><th>Content-Type</th></tr>\n`;
     for (const r of ep.responses) {
-      html += `<tr><td><strong>${escapeHtml(r.status)}</strong></td><td>${escapeHtml(r.description)}</td><td><code>${r.contentType ?? "-"}</code></td></tr>\n`;
+      html += `<tr><td><strong>${escapeHtml(r.status)}</strong></td><td>${
+        escapeHtml(r.description)
+      }</td><td><code>${escapeHtml(r.contentType ?? "-")}</code></td></tr>\n`;
     }
     html += `</table>\n`;
     html += `</div>\n`;

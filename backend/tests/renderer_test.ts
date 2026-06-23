@@ -18,12 +18,28 @@ const SINGLE_DOC: DocNode = {
       description: "Returns a paginated list of users",
       tags: ["users"],
       parameters: [
-        { name: "page", location: "query", type: "integer", required: false, description: "Page number" },
-        { name: "limit", location: "query", type: "integer", required: false, description: "Items per page" },
+        {
+          name: "page",
+          location: "query",
+          type: "integer",
+          required: false,
+          description: "Page number",
+        },
+        {
+          name: "limit",
+          location: "query",
+          type: "integer",
+          required: false,
+          description: "Items per page",
+        },
       ],
       requestBody: undefined,
       responses: [
-        { status: "200", description: "A JSON array of users", contentType: "application/json" },
+        {
+          status: "200",
+          description: "A JSON array of users",
+          contentType: "application/json",
+        },
         { status: "401", description: "Unauthorized" },
       ],
     },
@@ -119,6 +135,42 @@ Deno.test("render HTML escapes special characters", () => {
   const output = render(doc, OutputFormat.HTML);
   assertEquals(output.includes("<script>"), false);
   assertEquals(output.includes("&lt;script&gt;"), true);
+});
+
+Deno.test("render HTML escapes parameter location and response content type", () => {
+  const doc: DocNode = {
+    api: { title: "XSS Test", version: "1.0" },
+    endpoints: [{
+      method: "GET",
+      path: "/users",
+      summary: "List users",
+      tags: [],
+      parameters: [{
+        name: "filter",
+        location: "<img src=x onerror=alert(1)>",
+        type: "string",
+        required: false,
+      }],
+      responses: [{
+        status: "200",
+        description: "OK",
+        contentType: "text/html</code><script>alert(1)</script>",
+      }],
+    }],
+  };
+
+  const output = render(doc, OutputFormat.HTML);
+
+  assertEquals(output.includes("<img src=x onerror=alert(1)>"), false);
+  assertEquals(
+    output.includes("text/html</code><script>alert(1)</script>"),
+    false,
+  );
+  assertStringIncludes(output, "&lt;img src=x onerror=alert(1)&gt;");
+  assertStringIncludes(
+    output,
+    "text/html&lt;/code&gt;&lt;script&gt;alert(1)&lt;/script&gt;",
+  );
 });
 
 Deno.test("render handles empty endpoints in all formats", () => {
