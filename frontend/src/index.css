@@ -12,6 +12,11 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  /* Dark mode body styles */
+  html.dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
   *::-webkit-scrollbar {
     @apply w-2 h-2;
   }
@@ -22,6 +27,10 @@
 
   *::-webkit-scrollbar-thumb {
     @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  }
+
+  html.dark *::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 hover:bg-gray-500;
   }
 }
 
@@ -72,6 +81,30 @@
   }
 }
 
+/* Dark mode component overrides */
+@layer components {
+  html.dark .btn-secondary {
+    @apply bg-gray-800 text-gray-200 border-gray-700 hover:bg-gray-700;
+  }
+
+  html.dark .btn-ghost {
+    @apply text-gray-300 hover:bg-gray-800 focus:ring-gray-600;
+  }
+
+  html.dark .input {
+    @apply bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400
+           focus:ring-primary-500;
+  }
+
+  html.dark .label {
+    @apply text-gray-200;
+  }
+
+  html.dark .card {
+    @apply bg-gray-800 border-gray-700 shadow-none;
+  }
+}
+
 /* Markdown styles */
 .markdown-body {
   @apply text-gray-800 leading-relaxed;
@@ -106,15 +139,27 @@
 }
 
 .markdown-body table {
-  @apply w-full border-collapse my-4 text-sm;
+  @apply w-full border-collapse my-4 text-sm bg-white;
+}
+
+.markdown-body thead {
+  @apply bg-gray-50;
 }
 
 .markdown-body th {
-  @apply bg-gray-50 font-semibold text-left p-3 border border-gray-200;
+  @apply bg-gray-50 font-semibold text-left p-3 border border-gray-200 text-gray-700;
 }
 
 .markdown-body td {
-  @apply p-3 border border-gray-200;
+  @apply p-3 border border-gray-200 text-gray-700;
+}
+
+.markdown-body tbody tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+.markdown-body tbody tr:hover {
+  @apply bg-gray-100;
 }
 
 .markdown-body blockquote {
@@ -136,4 +181,115 @@
 
 .markdown-body hr {
   @apply my-8 border-gray-200;
+}
+
+/* Dark mode markdown styles */
+html.dark .markdown-body {
+  @apply text-gray-200;
+}
+
+html.dark .markdown-body h1 {
+  @apply border-gray-700;
+}
+
+html.dark .markdown-body h3 {
+  @apply text-gray-200;
+}
+
+html.dark .markdown-body code {
+  @apply bg-gray-800 text-pink-400;
+}
+
+html.dark .markdown-body pre {
+  @apply bg-gray-900;
+}
+
+html.dark .markdown-body table {
+  @apply bg-gray-800;
+}
+
+html.dark .markdown-body thead {
+  @apply bg-gray-900;
+}
+
+html.dark .markdown-body th {
+  @apply bg-gray-900 text-gray-100 border-gray-700;
+}
+
+html.dark .markdown-body td {
+  @apply border-gray-700 text-gray-200;
+}
+
+html.dark .markdown-body tbody tr:nth-child(even) {
+  @apply bg-gray-800;
+}
+
+html.dark .markdown-body tbody tr:hover {
+  @apply bg-gray-700;
+}
+
+html.dark .markdown-body blockquote {
+  @apply border-primary-600 bg-gray-800 text-gray-300;
+}
+
+html.dark .markdown-body a {
+  @apply text-primary-400 hover:text-primary-300;
+}
+
+html.dark .markdown-body hr {
+  @apply border-gray-700;
+}
+
+/* JSON Syntax Highlighting - Light Mode */
+.json-pre {
+  @apply bg-gray-50 text-gray-800 p-4 rounded-lg overflow-x-auto my-4 font-mono text-sm leading-relaxed border border-gray-200;
+  tab-size: 2;
+}
+
+.json-pre code {
+  @apply bg-transparent text-gray-800 p-0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* JSON token colors - Light Mode */
+.json-key {
+  color: #c2185b; /* deep pink - JSON keys */
+  font-weight: 600;
+}
+
+.json-string {
+  color: #2e7d32; /* deep green - JSON string values */
+}
+
+.json-number {
+  color: #1565c0; /* deep blue - JSON numbers */
+}
+
+.json-keyword {
+  color: #e65100; /* deep amber - true, false, null */
+}
+
+/* Dark mode JSON syntax highlighting */
+html.dark .json-pre {
+  @apply bg-gray-900 text-gray-100 border-gray-700;
+}
+
+html.dark .json-pre code {
+  @apply text-gray-100;
+}
+
+html.dark .json-key {
+  color: #f9a8d4; /* pink-300 */
+}
+
+html.dark .json-string {
+  color: #86efac; /* green-300 */
+}
+
+html.dark .json-number {
+  color: #93c5fd; /* blue-300 */
+}
+
+html.dark .json-keyword {
+  color: #fcd34d; /* amber-300 */
 }

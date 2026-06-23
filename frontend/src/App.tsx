@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
 import { JsonEditor } from "./components/JsonEditor";
 import { OutputPanel } from "./components/OutputPanel";
 import { FormatSelector } from "./components/FormatSelector";
 import { ToastContainer, showToast } from "./components/Toast";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import type { OutputFormat } from "./types";
 import { generateDoc, importOpenAPI } from "./api/client";
 import { sampleApiSpec, sampleOpenAPI } from "./utils/sample";
@@ -19,6 +20,41 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // 同步主题到 document.documentElement
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
+
+  // 全局错误捕获
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error caught:", event.error || event.message);
+      console.error("Error details:", {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+      });
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!inputValue.trim()) {
@@ -108,7 +144,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme === "dark" ? "dark" : ""}`}>
+    <ErrorBoundary>
+    <div className="min-h-screen flex flex-col">
       <Header
         onLoadSample={handleLoadSample}
         onClear={handleClear}
@@ -118,14 +155,14 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         {/* Input Mode Tabs */}
-        <div className="flex gap-1 mb-4 p-1 bg-gray-100 rounded-lg w-fit">
+        <div className="flex gap-1 mb-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
           <button
             type="button"
             onClick={() => setInputMode("spec")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               inputMode === "spec"
-                ? "bg-white text-primary-700 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-white dark:bg-gray-700 text-primary-700 dark:text-primary-300 shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
             自定义 API 规范
@@ -135,8 +172,8 @@ export default function App() {
             onClick={() => setInputMode("openapi")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               inputMode === "openapi"
-                ? "bg-white text-primary-700 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-white dark:bg-gray-700 text-primary-700 dark:text-primary-300 shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
             OpenAPI 导入
@@ -147,10 +184,10 @@ export default function App() {
           {/* Left Panel - Input */}
           <div className="card flex flex-col p-4 h-full">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-gray-800">
+              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
                 {inputMode === "spec" ? "API 规范输入" : "OpenAPI 规范导入"}
               </h2>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
                 JSON 格式
               </span>
             </div>
@@ -217,7 +254,7 @@ export default function App() {
 
           {/* Right Panel - Output */}
           <div className="card flex flex-col p-4 h-full">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">输出结果</h2>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">输出结果</h2>
             <div className="flex-1 min-h-[400px]">
               <OutputPanel
                 content={outputContent}
@@ -232,8 +269,8 @@ export default function App() {
         </div>
 
         {/* Footer */}
-        <footer className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-500">
+        <footer className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             API 文档生成器 · 基于 Deno + React 构建 · 数据完全在本地处理，不会上传到任何服务器
           </p>
         </footer>
@@ -241,5 +278,6 @@ export default function App() {
 
       <ToastContainer />
     </div>
+    </ErrorBoundary>
   );
 }
