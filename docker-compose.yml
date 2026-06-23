@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api-doc-generator:
     build:
@@ -11,9 +9,6 @@ services:
     environment:
       - PORT=8080
       - DENO_ENV=production
-    volumes:
-      - ./backend:/app/backend
-      - ./frontend/dist:/app/frontend/dist
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/health || exit 1"]
