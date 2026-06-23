@@ -27,7 +27,16 @@ export async function handleGenerate(req: Request): Promise<Response> {
   const format = resolveFormat(req);
 
   try {
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const spec = parseBody(body, isApiSpec);
     const doc  = generate(spec);
     const output = render(doc, format);
