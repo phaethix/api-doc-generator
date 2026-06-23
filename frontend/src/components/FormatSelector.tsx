@@ -38,13 +38,13 @@ export function FormatSelector({ value, onChange }: FormatSelectorProps) {
             onClick={() => onChange(f.value)}
             className={`relative p-3 rounded-lg border-2 transition-all duration-200 text-left ${
               value === f.value
-                ? "border-primary-500 bg-primary-50"
-                : "border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/50"
+                ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                : "border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/10"
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
               <svg
-                className={`w-4 h-4 ${value === f.value ? "text-primary-600" : "text-gray-500"}`}
+                className={`w-4 h-4 ${value === f.value ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -58,14 +58,14 @@ export function FormatSelector({ value, onChange }: FormatSelectorProps) {
               </svg>
               <span
                 className={`text-sm font-semibold ${
-                  value === f.value ? "text-primary-700" : "text-gray-700"
+                  value === f.value ? "text-primary-700 dark:text-primary-300" : "text-gray-700 dark:text-gray-200"
                 }`}
               >
                 {f.label}
               </span>
               {value === f.value && (
                 <svg
-                  className="w-4 h-4 text-primary-600 ml-auto"
+                  className="w-4 h-4 text-primary-600 dark:text-primary-400 ml-auto"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -77,7 +77,7 @@ export function FormatSelector({ value, onChange }: FormatSelectorProps) {
                 </svg>
               )}
             </div>
-            <p className="text-xs text-gray-500">{f.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{f.description}</p>
           </button>
         ))}
       </div>

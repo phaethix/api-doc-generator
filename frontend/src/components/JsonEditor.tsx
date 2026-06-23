@@ -73,7 +73,7 @@ export function JsonEditor({
         </div>
       )}
 
-      <div className={`relative flex-1 rounded-lg border ${error ? "border-red-300" : "border-gray-300"} bg-white overflow-hidden`} style={{ minHeight: height }}>
+      <div className={`relative flex-1 rounded-lg border ${error ? "border-red-300 dark:border-red-600" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-800 overflow-hidden`} style={{ minHeight: height }}>
         <textarea
           ref={textareaRef}
           value={value}
@@ -81,7 +81,7 @@ export function JsonEditor({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           spellCheck={false}
-          className="w-full h-full p-4 font-mono text-sm leading-relaxed text-gray-800 bg-transparent resize-none focus:outline-none"
+          className="w-full h-full p-4 font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-100 bg-transparent resize-none focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
           style={{ tabSize: 2 }}
         />
       </div>

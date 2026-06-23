@@ -32,7 +32,7 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm bg-white/80">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center shadow-sm">
@@ -51,8 +51,8 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">API 文档生成器</h1>
-            <p className="text-xs text-gray-500">From Spec to Documentation</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">API 文档生成器</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">From Spec to Documentation</p>
           </div>
         </div>
 
@@ -67,7 +67,7 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
                   : "bg-red-500"
               }`}
             />
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {healthLoading
                 ? "检查中..."
                 : health
