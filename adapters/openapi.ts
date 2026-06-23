@@ -3,8 +3,9 @@ import type { ApiSpec, PathItem, Operation, Parameter, Schema, ApiResponse, Requ
 import type { DocNode } from "../types/doc_node.ts";
 import { generate } from "../core/generator.ts";
 
-interface OpenAPIDoc {
-  openapi: string;
+export interface OpenAPIDoc {
+  openapi?: string;
+  swagger?: string;
   info: { title: string; version: string; description?: string };
   servers?: Array<{ url: string; description?: string }>;
   tags?: Array<{ name: string; description?: string }>;
