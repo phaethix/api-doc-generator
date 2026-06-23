@@ -11,7 +11,7 @@ export function markdownToHtml(md: string): string {
   let inList = false;
   let inOrderedList = false;
   let inTable = false;
-  let tableRows: string[] = [];
+  let tableRows: Array<{ isHeader: boolean; cells: string[] }> = [];
   let inBlockquote = false;
   let blockquoteBuffer: string[] = [];
 
@@ -27,11 +27,35 @@ export function markdownToHtml(md: string): string {
   };
 
   const closeTable = () => {
-    if (inTable) {
-      html.push("<table>");
-      for (const row of tableRows) {
-        html.push(row);
+    if (inTable && tableRows.length > 0) {
+      html.push('<table class="markdown-table">');
+
+      // 提取表头和数据行
+      const headerRow = tableRows[0];
+      const dataRows = tableRows.slice(1);
+
+      // 生成 thead
+      if (headerRow && headerRow.isHeader) {
+        html.push(
+          `<thead><tr>${headerRow.cells
+            .map((c) => `<th>${inlineFormat(c)}</th>`)
+            .join("")}</tr></thead>`,
+        );
       }
+
+      // 生成 tbody
+      if (dataRows.length > 0) {
+        html.push("<tbody>");
+        for (const row of dataRows) {
+          html.push(
+            `<tr>${row.cells
+              .map((c) => `<td>${inlineFormat(c)}</td>`)
+              .join("")}</tr>`,
+          );
+        }
+        html.push("</tbody>");
+      }
+
       html.push("</table>");
       inTable = false;
       tableRows = [];
@@ -135,8 +159,31 @@ export function markdownToHtml(md: string): string {
       continue;
     }
 
-    // Table (simple detection)
-    if (line.includes("|") && lines[i + 1] && /^\s*\|?[\s\-:|]+\|?\s*$/.test(lines[i + 1])) {
+    // Helper function to parse a table row
+    const parseTableRow = (row: string): string[] => {
+      let trimmed = row.trim();
+      // 去除首尾的 |
+      if (trimmed.startsWith("|")) trimmed = trimmed.substring(1);
+      if (trimmed.endsWith("|")) trimmed = trimmed.substring(0, trimmed.length - 1);
+
+      // 按 | 分割并去除每个单元格的空白
+      return trimmed.split("|").map((cell) => cell.trim());
+    };
+
+    // Table detection
+    // 表格行格式: | col1 | col2 | col3 |
+    // 分隔行格式: | --- | --- | --- | 或 |:---:| ---: | :--- | 等
+    const isTableRow = (l: string): boolean => {
+      const trimmed = l.trim();
+      return trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length > 1;
+    };
+
+    const isSeparatorRow = (l: string): boolean => {
+      return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(l);
+    };
+
+    // 检查是否是表格的开始
+    if (isTableRow(line) && lines[i + 1] && isSeparatorRow(lines[i + 1])) {
       closeList();
       closeBlockquote();
 
@@ -145,25 +192,24 @@ export function markdownToHtml(md: string): string {
         tableRows = [];
       }
 
-      const cells = line.split("|").map((c) => c.trim()).filter((c, idx, arr) => {
-        if (arr.length > 2 && (idx === 0 || idx === arr.length - 1)) {
-          return c !== "";
-        }
-        return true;
-      });
+      // 解析表头行
+      const headerCells = parseTableRow(line);
+      tableRows.push({ isHeader: true, cells: headerCells });
 
-      const isHeader = tableRows.length === 0;
-      const rowHtml = `<tr>${
-        cells.map((c) => isHeader ? `<th>${inlineFormat(c)}</th>` : `<td>${inlineFormat(c)}</td>`).join("")
-      }</tr>`;
-      tableRows.push(rowHtml);
-
-      // Skip the separator line
-      if (isHeader) {
-        i++; // skip separator
-      }
+      // 跳过分隔行
+      i++;
       continue;
-    } else if (inTable && line.trim() === "") {
+    }
+
+    // 在表格中继续处理表格数据行
+    if (inTable && isTableRow(line)) {
+      const cells = parseTableRow(line);
+      tableRows.push({ isHeader: false, cells: cells });
+      continue;
+    }
+
+    // 表格外的空行或未识别的行结束表格
+    if (inTable && (line.trim() === "" || !isTableRow(line))) {
       closeTable();
     }
 
