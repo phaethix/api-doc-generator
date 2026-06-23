@@ -89,20 +89,65 @@ Deno.test("POST /generate returns 400 for invalid body", async () => {
   assertEquals(typeof body.error, "string");
 });
 
-Deno.test("POST /generate returns 500 for non-JSON body", async () => {
+Deno.test("POST /generate returns 400 for non-JSON body", async () => {
   const req = new Request(`${BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "this is not json",
   });
   const res = await handler(req);
-  assertEquals(res.status, 500);
+  assertEquals(res.status, 400);
+  const body = await res.json();
+  assertEquals(typeof body.error, "string");
 });
 
-Deno.test("Unknown route returns 404", async () => {
-  const req = new Request(`${BASE}/nonexistent`);
+Deno.test("POST /import/openapi converts OpenAPI to markdown", async () => {
+  const openApiBody = JSON.stringify({
+    openapi: "3.0.0",
+    info: { title: "Pet Store", version: "1.0" },
+    paths: {
+      "/pets": {
+        get: {
+          summary: "List pets",
+          responses: { "200": { description: "OK" } },
+        },
+      },
+    },
+  });
+
+  const req = new Request(`${BASE}/import/openapi?format=markdown`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: openApiBody,
+  });
+  const res = await handler(req);
+  assertEquals(res.status, 200);
+  const body = await res.text();
+  assertStringIncludes(body, "# Pet Store");
+  assertStringIncludes(body, "## GET /pets");
+});
+
+Deno.test("POST /import/openapi returns 400 for non-OpenAPI JSON", async () => {
+  const req = new Request(`${BASE}/import/openapi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ foo: "bar" }),
+  });
+  const res = await handler(req);
+  assertEquals(res.status, 400);
+});
+
+Deno.test("Unknown API route returns 404", async () => {
+  // Test that API-like routes (POST to non-existent endpoint) return 404
+  const req = new Request(`${BASE}/api/nonexistent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
   const res = await handler(req);
   assertEquals(res.status, 404);
+  const body = await res.json();
+  assertEquals(typeof body.error, "string");
 });
 
 Deno.test("Wrong method on /generate returns 404", async () => {
