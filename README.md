@@ -156,6 +156,44 @@ api-doc-generator/
 
 ## 🚀 快速开始
 
+本项目提供了一个便捷的开发环境管理脚本 `dev.sh`，可以一键启动、停止前后端服务。
+
+```bash
+# 启动前后端（自动检测并安装依赖）
+./dev.sh start
+
+# 查看服务状态
+./dev.sh status
+
+# 停止所有服务
+./dev.sh stop
+
+# 重启所有服务
+./dev.sh restart
+
+# 仅启动/停止后端
+./dev.sh start:backend
+./dev.sh stop:backend
+
+# 仅启动/停止前端
+./dev.sh start:frontend
+./dev.sh stop:frontend
+
+# 查看实时日志
+./dev.sh logs backend    # 后端日志
+./dev.sh logs frontend   # 前端日志
+
+# 清理日志和 PID 文件
+./dev.sh clean
+
+# 查看所有命令
+./dev.sh help
+```
+
+启动后访问：
+- 前端: http://localhost:5173
+- 后端: http://localhost:8080
+
 ### 前置要求
 
 - [Deno](https://deno.land/) 1.40+
