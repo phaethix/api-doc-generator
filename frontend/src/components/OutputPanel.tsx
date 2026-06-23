@@ -21,36 +21,7 @@ export function OutputPanel({
 }: OutputPanelProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // 当 HTML 内容变更时，更新 iframe
-  useEffect(() => {
-    if (format === "html" && iframeRef.current && content) {
-      const iframe = iframeRef.current;
-      const doc = iframe.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(content);
-        doc.close();
-      }
-    }
-  }, [content, format]);
-
-  const renderedContent = useMemo(() => {
-    if (format === "markdown") {
-      return markdownToHtml(content);
-    }
-    if (format === "json") {
-      try {
-        const parsed = JSON.parse(content);
-        return `<pre class="!bg-gray-900 !text-gray-100 p-4 rounded-lg overflow-x-auto"><code>${escapeHtml(
-          JSON.stringify(parsed, null, 2),
-        )}</code></pre>`;
-      } catch {
-        return `<pre class="!bg-gray-900 !text-gray-100 p-4 rounded-lg overflow-x-auto"><code>${escapeHtml(content)}</code></pre>`;
-      }
-    }
-    return content;
-  }, [content, format]);
-
+  // HTML 转义函数
   const escapeHtml = (s: string): string => {
     return s
       .replace(/&/g, "&amp;")
@@ -60,10 +31,97 @@ export function OutputPanel({
       .replace(/'/g, "&#39;");
   };
 
+  // 当 HTML 内容变更时，更新 iframe
+  useEffect(() => {
+    if (format !== "html" || !content) return;
+
+    // 延迟到下一帧确保 iframe 已挂载
+    let timeoutId: number | null = null;
+    let isCancelled = false;
+
+    const updateIframe = () => {
+      if (isCancelled) return;
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+
+      try {
+        const doc = iframe.contentDocument;
+        if (doc) {
+          doc.open();
+          doc.write(content);
+          doc.close();
+        }
+      } catch (err) {
+        console.error("Failed to update iframe:", err);
+      }
+    };
+
+    // 使用 setTimeout 确保 iframe 已完全挂载
+    timeoutId = window.setTimeout(updateIframe, 0);
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [content, format]);
+
+  // JSON 语法高亮函数
+  const highlightJson = (jsonStr: string): string => {
+    // 转义 HTML 字符
+    let escaped = escapeHtml(jsonStr);
+    // 高亮 JSON 语法
+    // 匹配字符串（键值对中的键或普通字符串值）
+    escaped = escaped.replace(
+      /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?/g,
+      (match, str, colon, keyword) => {
+        let cls = "json-number";
+        let text = match;
+        if (str !== undefined) {
+          // 字符串
+          if (colon !== undefined) {
+            // 这是键
+            cls = "json-key";
+          } else {
+            // 这是字符串值
+            cls = "json-string";
+          }
+          text = str;
+        } else if (keyword !== undefined) {
+          // 关键字 true/false/null
+          cls = "json-keyword";
+          text = keyword;
+        } else {
+          // 数字
+          text = match;
+        }
+        return `<span class="${cls}">${text}</span>`;
+      },
+    );
+    return escaped;
+  };
+
+  const renderedContent = useMemo(() => {
+    if (format === "markdown") {
+      return markdownToHtml(content);
+    }
+    if (format === "json") {
+      try {
+        const parsed = JSON.parse(content);
+        const formatted = JSON.stringify(parsed, null, 2);
+        return `<pre class="json-pre"><code>${highlightJson(formatted)}</code></pre>`;
+      } catch {
+        return `<pre class="json-pre"><code>${highlightJson(content)}</code></pre>`;
+      }
+    }
+    return content;
+  }, [content, format]);
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400">
-        <div className="w-10 h-10 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4" />
+      <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+        <div className="w-10 h-10 border-3 border-primary-200 dark:border-primary-800 border-t-primary-600 rounded-full animate-spin mb-4" />
         <p className="text-sm">正在生成文档...</p>
       </div>
     );
@@ -87,8 +145,8 @@ export function OutputPanel({
 
   if (!content) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400">
-        <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+        <svg className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -97,7 +155,7 @@ export function OutputPanel({
           />
         </svg>
         <p className="text-sm">输入 API 规范后点击"生成文档"按钮</p>
-        <p className="text-xs text-gray-400 mt-1">支持自定义格式和 OpenAPI 规范</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">支持自定义格式和 OpenAPI 规范</p>
       </div>
     );
   }
@@ -106,10 +164,10 @@ export function OutputPanel({
   if (format === "html") {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
             预览
-            <span className="ml-2 text-xs text-gray-400">HTML</span>
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">HTML</span>
           </span>
           <div className="flex gap-2">
             <button
@@ -167,7 +225,7 @@ export function OutputPanel({
         </div>
         <iframe
           ref={iframeRef}
-          className="flex-1 w-full border border-gray-200 rounded-lg bg-white"
+          className="flex-1 w-full border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
           sandbox="allow-same-origin"
           title="HTML 预览"
         />
@@ -178,10 +236,10 @@ export function OutputPanel({
   // Markdown 或 JSON 格式
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
-        <span className="text-sm font-medium text-gray-700">
+      <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
           预览
-          <span className="ml-2 text-xs text-gray-400">
+          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
             {format === "markdown" ? "Markdown → HTML" : "JSON"}
           </span>
         </span>
