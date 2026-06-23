@@ -1,6 +1,7 @@
 // tests/integration_test.ts
+// 集成测试 - 测试基于 Fresh 框架的全栈 API 路由
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { handler } from "../main.ts";
+import { handler } from "../legacy_handler.ts";
 
 const BASE = "http://localhost:8080";
 
@@ -89,14 +90,14 @@ Deno.test("POST /generate returns 400 for invalid body", async () => {
   assertEquals(typeof body.error, "string");
 });
 
-Deno.test("POST /generate returns 500 for non-JSON body", async () => {
+Deno.test("POST /generate returns 400 for non-JSON body", async () => {
   const req = new Request(`${BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "this is not json",
   });
   const res = await handler(req);
-  assertEquals(res.status, 500);
+  assertEquals(res.status, 400);
 });
 
 Deno.test("Unknown route returns 404", async () => {

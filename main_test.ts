@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { handler } from "./main.ts";
+import { handler } from "./legacy_handler.ts";
 
 Deno.test("GET /health returns ok status", async () => {
   const res = await handler(new Request("http://localhost/health"));
