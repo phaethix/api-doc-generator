@@ -16,8 +16,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # 项目路径
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# dev.sh is in scripts/, so project root is one level up
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="${PROJECT_ROOT}/frontend"
+BACKEND_DIR="${PROJECT_ROOT}/backend"
 PID_DIR="${PROJECT_ROOT}/.pids"
 BACKEND_PID_FILE="${PID_DIR}/backend.pid"
 FRONTEND_PID_FILE="${PID_DIR}/frontend.pid"
@@ -185,7 +187,7 @@ start_backend() {
     print_step "启动后端服务 (Deno)..."
     ensure_dirs
 
-    cd "$PROJECT_ROOT"
+    cd "$BACKEND_DIR"
     nohup deno run --watch --allow-net --allow-read --allow-env main.ts \
         > "$BACKEND_LOG" 2>&1 &
     local pid=$!

@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  api-doc-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-doc-generator
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DENO_ENV=production
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend/dist:/app/frontend/dist
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "deno", "eval", "fetch('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
