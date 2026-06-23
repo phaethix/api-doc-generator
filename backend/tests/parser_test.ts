@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { isApiSpec, isApiInfo, isPathItem, isOperation, parseBody, ParseError } from "../core/parser.ts";
+import { isApiSpec, parseBody, ParseError } from "../core/parser.ts";
 import type { ApiSpec } from "../types/api_spec.ts";
 
 const VALID_SPEC: ApiSpec = {

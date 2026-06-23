@@ -1,10 +1,14 @@
-import type { ApiSpec, Operation, PathItem, Parameter } from "../types/api_spec.ts";
 import type {
+  ApiSpec,
+  Operation,
+  Parameter,
+  PathItem,
+} from "../types/api_spec.ts";
+import type {
+  BodyDetail,
   DocNode,
   Endpoint,
   ParamDetail,
-  ResponseDetail,
-  BodyDetail,
   TagGroup,
 } from "../types/doc_node.ts";
 
@@ -63,7 +67,9 @@ function buildEndpoint(
       status,
       description: r.description,
       contentType: firstKey(r.content),
-      type: r.content ? schemaLabel(r.content[firstKey(r.content)!]?.schema) : undefined,
+      type: r.content
+        ? schemaLabel(r.content[firstKey(r.content)!]?.schema)
+        : undefined,
     })),
   };
 }

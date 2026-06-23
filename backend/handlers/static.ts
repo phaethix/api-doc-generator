@@ -1,7 +1,7 @@
 // handlers/static.ts
 // Serves the built frontend SPA and its assets.
 
-import { contentType } from "jsr:@std/media-types@1";
+import { contentType } from "@std/media-types";
 import { isApiPath } from "../shared/utils.ts";
 
 // Resolve the path to frontend/dist relative to the project root.
@@ -156,9 +156,12 @@ export async function handleStatic(req: Request): Promise<Response> {
     });
   } catch {
     // If even index.html doesn't exist, return a friendly 404
-    return new Response("Frontend not built. Run `npm run build` in the frontend directory.", {
-      status: 404,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    return new Response(
+      "Frontend not built. Run `npm run build` in the frontend directory.",
+      {
+        status: 404,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      },
+    );
   }
 }
