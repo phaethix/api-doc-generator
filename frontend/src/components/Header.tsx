@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { HealthResponse } from "../types";
+import { checkHealth } from "../api/client";
 
 interface HeaderProps {
   onLoadSample: () => void;
@@ -13,21 +14,18 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
   const [healthLoading, setHealthLoading] = useState(true);
 
   useEffect(() => {
-    const checkHealth = async () => {
+    const doCheckHealth = async () => {
       try {
-        const res = await fetch("/health");
-        if (res.ok) {
-          const data = await res.json();
-          setHealth(data);
-        }
+        const data = await checkHealth();
+        setHealth(data);
       } catch {
-        // ignore
+        setHealth(null);
       } finally {
         setHealthLoading(false);
       }
     };
-    checkHealth();
-    const interval = setInterval(checkHealth, 30000);
+    doCheckHealth();
+    const interval = setInterval(doCheckHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
