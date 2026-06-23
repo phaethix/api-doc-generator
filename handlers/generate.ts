@@ -26,8 +26,17 @@ const CONTENT_TYPES: Record<OutputFormat, string> = {
 export async function handleGenerate(req: Request): Promise<Response> {
   const format = resolveFormat(req);
 
+  let body: unknown;
   try {
-    const body = await req.json();
+    body = await req.json();
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON in request body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  try {
     const spec = parseBody(body, isApiSpec);
     const doc  = generate(spec);
     const output = render(doc, format);
@@ -60,8 +69,15 @@ export async function handleGenerate(req: Request): Promise<Response> {
 
 // ── Format resolution: query param → Accept header → default
 function resolveFormat(req: Request): OutputFormat {
-  const url = new URL(req.url);
-  const q = url.searchParams.get("format")?.toLowerCase();
+  let q: string | null = null;
+  try {
+    const url = new URL(req.url, "http://localhost");
+    q = url.searchParams.get("format")?.toLowerCase() ?? null;
+  } catch {
+    // req.url may be a relative path, try to extract format manually
+    const match = req.url.match(/[?&]format=([^&]+)/);
+    q = match ? match[1].toLowerCase() : null;
+  }
 
   if (q === "html") return OutputFormat.HTML;
   if (q === "json") return OutputFormat.JSON;
