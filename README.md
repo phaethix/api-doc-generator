@@ -112,7 +112,7 @@ flowchart LR
     B -->|无效| C[400 Error<br/>JSON]
     B -->|有效| D[ApiSpec<br/>类型化对象]
     D --> E[Generator<br/>路径扁平 + Tag 分组]
-    E --> F[DocNode[]<br/>结构化文档树]
+    E --> F["DocNode[]<br/>结构化文档树"]
     F --> G{Renderer<br/>格式选择}
     G -->|markdown| H[text/markdown]
     G -->|html| I[text/html]
@@ -145,8 +145,8 @@ sequenceDiagram
     else 校验成功
         P-->>BE: ApiSpec
         BE->>G: generate(ApiSpec)
-        G-->>BE: DocNode[]
-        BE->>R: render(DocNode[], format)
+        G-->>BE: "DocNode[]"
+        BE->>R: render("DocNode[]", format)
         R-->>BE: string
         BE-->>FE: 200 OK + 文档内容
         FE->>FE: OutputPanel 高亮渲染
