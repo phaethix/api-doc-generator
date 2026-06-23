@@ -1,7 +1,5 @@
 # API 文档生成器 (API Doc Generator)
 
-> 🌿 **分支**: `feature/model-b-fullstack` — Deno + React SPA 实现方案
-
 一个基于 **Deno + React** 的全栈 API 文档生成工具，支持从 API 规范一键生成精美的 Markdown / HTML / JSON 文档。
 
 ## 📑 目录
@@ -27,7 +25,6 @@
 - [📦 部署](#-部署)
   - [部署架构](#部署架构)
   - [CI/CD 流水线](#cicd-流水线)
-- [🔀 与其他分支的对比](#️-与其他分支的对比)
 - [🤝 贡献](#-贡献)
 - [📄 许可证](#-许可证)
 
@@ -813,52 +810,6 @@ flowchart LR
     I --> K[自动化验证]
     K -->|通过| J
     K -->|失败| D
-```
-
-## 🔀 与其他分支的对比
-
-本项目有三个功能分支，分别代表不同的技术选型：
-
-| 特性 | model-a | model-b (本分支) | model-c |
-|------|---------|-----------------|---------|
-| 后端运行时 | Node.js + Express | Deno 原生 | Deno + Fresh |
-| 前端框架 | React + Vite | React + Vite | Preact + Fresh Islands |
-| 路由 | Express Router | URLPattern | Fresh File-based Routes |
-| 类型系统 | TypeScript | TypeScript | TypeScript |
-| 包管理 | npm | Deno imports + npm (frontend) | Deno JSR |
-
-### 技术选型对比图
-
-```mermaid
-graph TB
-    subgraph ModelA["🌐 model-a 分支"]
-        direction TB
-        Node["Node.js 20+"] --> Express["Express.js"]
-        Express --> Pug["模板引擎"]
-        ReactA["React 18"] --> ViteA["Vite"]
-        npmA["npm"] --> webpackA["Webpack"]
-    end
-
-    subgraph ModelB["🦕 model-b 分支 (当前)"]
-        direction TB
-        DenoB["Deno 2.x"] --> Router["URLPattern"]
-        Router --> TS["TypeScript Strict"]
-        ReactB["React 18"] --> ViteB["Vite + HMR"]
-        DenoImports["Deno imports"] --> NPM["npm (frontend)"]
-    end
-
-    subgraph ModelC["⚡ model-c 分支"]
-        direction TB
-        DenoC["Deno 2.x"] --> Fresh["Fresh Framework"]
-        Fresh --> Islands["Islands Architecture"]
-        Preact["Preact"] --> Twind["Twind CSS"]
-        JSR["Deno JSR"] --> Native["原生 TS"]
-    end
-
-    User["开发者"] -->|选择| Choice{偏好?}
-    Choice -->|传统生态| ModelA
-    Choice -->|现代化 + 原生| ModelB
-    Choice -->|极致性能 + SSR| ModelC
 ```
 
 ## 🤝 贡献
