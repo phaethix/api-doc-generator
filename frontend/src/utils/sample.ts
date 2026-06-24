@@ -156,3 +156,11 @@ export const sampleOpenAPI = `{
     }
   }
 }`;
+
+export const sampleAIDescription = `User login endpoint: accepts email and password via POST request, returns JWT token and user profile information. The token expires in 24 hours.
+
+Additional requirements:
+- Input validation for email format
+- Password must be at least 8 characters
+- Return 401 status code for invalid credentials
+- Include refresh token mechanism`;
