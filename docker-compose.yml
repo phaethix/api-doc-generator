@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: api-doc-generator:latest
     container_name: api-doc-generator
     ports:
       - "8080:8080"
