@@ -1,8 +1,14 @@
 // handlers/generate.ts
-import { parseBody, isApiSpec } from "../core/parser.ts";
+import { isApiSpec, parseBody } from "../core/parser.ts";
 import { generate } from "../core/generator.ts";
 import { render } from "../core/renderer.ts";
-import { resolveFormat, CONTENT_TYPES, readBody, handleApiError, corsHeaders } from "../shared/utils.ts";
+import {
+  CONTENT_TYPES,
+  corsHeaders,
+  handleApiError,
+  readBody,
+  resolveFormat,
+} from "../shared/utils.ts";
 
 // Custom business error
 export class GenerateError extends Error {
@@ -22,7 +28,7 @@ export async function handleGenerate(req: Request): Promise<Response> {
   try {
     const body = await readBody(req);
     const spec = parseBody(body, isApiSpec);
-    const doc  = generate(spec);
+    const doc = generate(spec);
     const output = render(doc, format);
 
     return new Response(output, {

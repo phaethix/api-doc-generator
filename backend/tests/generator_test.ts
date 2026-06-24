@@ -15,7 +15,11 @@ const MINIMAL_SPEC: ApiSpec = {
 };
 
 const FULL_SPEC: ApiSpec = {
-  info: { title: "Pet Store", version: "2.0.0", description: "A pet store API" },
+  info: {
+    title: "Pet Store",
+    version: "2.0.0",
+    description: "A pet store API",
+  },
   tags: [{ name: "pets" }],
   paths: {
     "/pets": {
@@ -25,7 +29,12 @@ const FULL_SPEC: ApiSpec = {
         description: "Returns all pets",
         tags: ["pets"],
         parameters: [
-          { name: "limit", in: "query", required: true, schema: { type: "integer" } },
+          {
+            name: "limit",
+            in: "query",
+            required: true,
+            schema: { type: "integer" },
+          },
         ],
         responses: {
           "200": { description: "A list of pets" },
@@ -110,7 +119,11 @@ Deno.test("generate handles array schema labels", () => {
         get: {
           summary: "List",
           parameters: [
-            { name: "ids", in: "query", schema: { type: "array", items: { type: "string" } } },
+            {
+              name: "ids",
+              in: "query",
+              schema: { type: "array", items: { type: "string" } },
+            },
           ],
           responses: { "200": { description: "OK" } },
         },

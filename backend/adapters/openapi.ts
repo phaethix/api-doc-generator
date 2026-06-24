@@ -1,5 +1,13 @@
 // adapters/openapi.ts
-import type { ApiSpec, PathItem, Operation, Parameter, Schema, ApiResponse, RequestBody } from "../types/api_spec.ts";
+import type {
+  ApiResponse,
+  ApiSpec,
+  Operation,
+  Parameter,
+  PathItem,
+  RequestBody,
+  Schema,
+} from "../types/api_spec.ts";
 import type { DocNode } from "../types/doc_node.ts";
 import { generate } from "../core/generator.ts";
 
@@ -119,10 +127,10 @@ function convertSchema(raw: unknown): Schema {
     items: s.items ? convertSchema(s.items) : undefined,
     properties: s.properties
       ? Object.fromEntries(
-          Object.entries(s.properties as Record<string, unknown>).map(
-            ([k, v]) => [k, convertSchema(v)],
-          ),
-        )
+        Object.entries(s.properties as Record<string, unknown>).map(
+          ([k, v]) => [k, convertSchema(v)],
+        ),
+      )
       : undefined,
   };
 }

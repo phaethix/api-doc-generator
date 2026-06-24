@@ -11,17 +11,17 @@ import { GenerateError } from "../handlers/generate.ts";
  */
 export function isApiPath(pathname: string): boolean {
   return pathname === "/health" ||
-         pathname.startsWith("/generate") ||
-         pathname.startsWith("/import/") ||
-         pathname === "/import" ||
-         pathname.startsWith("/api/");
+    pathname.startsWith("/generate") ||
+    pathname.startsWith("/import/") ||
+    pathname === "/import" ||
+    pathname.startsWith("/api/");
 }
 
 // Content-Type mapping
 export const CONTENT_TYPES: Record<OutputFormat, string> = {
   [OutputFormat.Markdown]: "text/markdown; charset=utf-8",
-  [OutputFormat.HTML]:     "text/html; charset=utf-8",
-  [OutputFormat.JSON]:     "application/json; charset=utf-8",
+  [OutputFormat.HTML]: "text/html; charset=utf-8",
+  [OutputFormat.JSON]: "application/json; charset=utf-8",
 };
 
 // Format parsing: query param → Accept header → default

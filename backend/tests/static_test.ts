@@ -15,7 +15,9 @@ Deno.test("GET / serves index.html when frontend is built", async () => {
   }
 
   if (!frontendExists) {
-    console.log("⚠️  Frontend not built, skipping SPA test. Run: cd frontend && npm run build");
+    console.log(
+      "⚠️  Frontend not built, skipping SPA test. Run: cd frontend && npm run build",
+    );
     return;
   }
 
@@ -25,7 +27,7 @@ Deno.test("GET / serves index.html when frontend is built", async () => {
   if (res.status === 200) {
     const body = await res.text();
     assertStringIncludes(body, "<!doctype html>");
-    assertStringIncludes(body, "<div id=\"root\">");
+    assertStringIncludes(body, '<div id="root">');
   }
 });
 
@@ -81,7 +83,10 @@ Deno.test("API 404 returns JSON error, not HTML", async () => {
   });
   const res = await handler(req);
   assertEquals(res.status, 404);
-  assertEquals(res.headers.get("Content-Type")?.includes("application/json"), true);
+  assertEquals(
+    res.headers.get("Content-Type")?.includes("application/json"),
+    true,
+  );
   const body = await res.json();
   assertEquals(typeof body.error, "string");
 });

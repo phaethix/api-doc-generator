@@ -11,7 +11,12 @@ const VALID_BODY = JSON.stringify({
       get: {
         summary: "Echo back",
         parameters: [
-          { name: "msg", in: "query", required: true, schema: { type: "string" } },
+          {
+            name: "msg",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+          },
         ],
         responses: {
           "200": { description: "The echo response" },
@@ -71,7 +76,10 @@ Deno.test("POST /generate with Accept: application/json returns JSON", async () 
   });
   const res = await handler(req);
   assertEquals(res.status, 200);
-  assertEquals(res.headers.get("Content-Type"), "application/json; charset=utf-8");
+  assertEquals(
+    res.headers.get("Content-Type"),
+    "application/json; charset=utf-8",
+  );
   const body = await res.json();
   assertEquals(body.api.title, "Integration Test API");
   assertEquals(body.endpoints.length, 1);
@@ -181,7 +189,10 @@ Deno.test("POST /ai/generate-openapi returns valid endpoint JSON", async () => {
       { name: "id", in: "path", required: true, schema: { type: "string" } },
     ],
     responses: {
-      "200": { description: "OK", content: { "application/json": { schema: { type: "object" } } } },
+      "200": {
+        description: "OK",
+        content: { "application/json": { schema: { type: "object" } } },
+      },
     },
   });
 
@@ -190,7 +201,11 @@ Deno.test("POST /ai/generate-openapi returns valid endpoint JSON", async () => {
       JSON.stringify({
         id: "chatcmpl-test",
         model: "agnes-2.0-flash",
-        choices: [{ index: 0, message: { role: "assistant", content: aiResponse }, finish_reason: "stop" }],
+        choices: [{
+          index: 0,
+          message: { role: "assistant", content: aiResponse },
+          finish_reason: "stop",
+        }],
         usage: { prompt_tokens: 50, completion_tokens: 100, total_tokens: 150 },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
@@ -201,7 +216,9 @@ Deno.test("POST /ai/generate-openapi returns valid endpoint JSON", async () => {
     const req = new Request(`${BASE}/ai/generate-openapi`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: "A user service with get by id endpoint" }),
+      body: JSON.stringify({
+        description: "A user service with get by id endpoint",
+      }),
     });
     const res = await handler(req);
     assertEquals(res.status, 200);
@@ -234,7 +251,11 @@ Deno.test("POST /ai/generate-openapi with scope=document returns full doc", asyn
     new Response(
       JSON.stringify({
         model: "agnes-2.0-flash",
-        choices: [{ index: 0, message: { role: "assistant", content: docResponse }, finish_reason: "stop" }],
+        choices: [{
+          index: 0,
+          message: { role: "assistant", content: docResponse },
+          finish_reason: "stop",
+        }],
         usage: { prompt_tokens: 80, completion_tokens: 200, total_tokens: 280 },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },
@@ -245,7 +266,10 @@ Deno.test("POST /ai/generate-openapi with scope=document returns full doc", asyn
     const req = new Request(`${BASE}/ai/generate-openapi`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: "A simple items CRUD service", scope: "document" }),
+      body: JSON.stringify({
+        description: "A simple items CRUD service",
+        scope: "document",
+      }),
     });
     const res = await handler(req);
     assertEquals(res.status, 200);
@@ -310,7 +334,11 @@ Deno.test("POST /ai/ping returns pong", async () => {
     new Response(
       JSON.stringify({
         model: "agnes-2.0-flash",
-        choices: [{ index: 0, message: { role: "assistant", content: "pong" }, finish_reason: "stop" }],
+        choices: [{
+          index: 0,
+          message: { role: "assistant", content: "pong" },
+          finish_reason: "stop",
+        }],
         usage: { prompt_tokens: 5, completion_tokens: 1, total_tokens: 6 },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } },

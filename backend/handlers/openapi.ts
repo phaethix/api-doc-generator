@@ -2,14 +2,22 @@
 import { render } from "../core/renderer.ts";
 import { fromOpenAPI, OpenAPIDoc } from "../adapters/openapi.ts";
 import { ParseError } from "../core/parser.ts";
-import { resolveFormat, CONTENT_TYPES, readBody, handleApiError, corsHeaders } from "../shared/utils.ts";
+import {
+  CONTENT_TYPES,
+  corsHeaders,
+  handleApiError,
+  readBody,
+  resolveFormat,
+} from "../shared/utils.ts";
 
 function isOpenAPIDoc(x: unknown): x is OpenAPIDoc {
   if (typeof x !== "object" || x === null) return false;
   const o = x as Record<string, unknown>;
   if (typeof o["info"] !== "object" || o["info"] === null) return false;
   const info = o["info"] as Record<string, unknown>;
-  if (typeof info["title"] !== "string" || typeof info["version"] !== "string") return false;
+  if (
+    typeof info["title"] !== "string" || typeof info["version"] !== "string"
+  ) return false;
   // Must have either openapi or swagger version
   return typeof o["openapi"] === "string" || typeof o["swagger"] === "string";
 }

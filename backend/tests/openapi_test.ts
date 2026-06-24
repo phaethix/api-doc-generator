@@ -21,7 +21,11 @@ const MINIMAL_OAS = {
 
 const OAS_WITH_NESTED_SCHEMA = {
   openapi: "3.0.3",
-  info: { title: "Complex API", version: "2.0", description: "API with nesting" },
+  info: {
+    title: "Complex API",
+    version: "2.0",
+    description: "API with nesting",
+  },
   servers: [{ url: "https://api.example.com/v2", description: "Production" }],
   tags: [{ name: "users", description: "User endpoints" }],
   paths: {
@@ -102,7 +106,10 @@ Deno.test("fromOpenAPI handles multiple methods on a path", () => {
     paths: {
       "/items": {
         get: { summary: "List", responses: { "200": { description: "OK" } } },
-        post: { summary: "Create", responses: { "201": { description: "Created" } } },
+        post: {
+          summary: "Create",
+          responses: { "201": { description: "Created" } },
+        },
       },
     },
   };

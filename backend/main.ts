@@ -6,10 +6,10 @@
 //   3. Start Deno.serve
 
 import { loadProjectEnv } from "./shared/env.ts";
-import { dirname, fromFileUrl } from "jsr:@std/path";
+import { dirname, fromFileUrl } from "@std/path";
 import { resolveRoute } from "./router.ts";
 import { logRequest } from "./middleware/logger.ts";
-import { isApiPath, corsHeaders } from "./shared/utils.ts";
+import { corsHeaders, isApiPath } from "./shared/utils.ts";
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -38,7 +38,9 @@ export async function handler(req: Request): Promise<Response> {
     }
   } else if (isApiPath(url.pathname)) {
     res = new Response(
-      JSON.stringify({ error: `Route not found: ${req.method} ${url.pathname}` }),
+      JSON.stringify({
+        error: `Route not found: ${req.method} ${url.pathname}`,
+      }),
       {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders() },
@@ -64,6 +66,10 @@ if (import.meta.main) {
   Deno.serve({ port }, handler);
   console.log(`API Doc Generator running on http://localhost:${port}`);
   console.log(`  Frontend: http://localhost:${port}/`);
-  console.log(`  API:      http://localhost:${port}/health, /generate, /import/openapi`);
-  console.log(`  AI:       http://localhost:${port}/ai/ping, /ai/generate-openapi`);
+  console.log(
+    `  API:      http://localhost:${port}/health, /generate, /import/openapi`,
+  );
+  console.log(
+    `  AI:       http://localhost:${port}/ai/ping, /ai/generate-openapi`,
+  );
 }

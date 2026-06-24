@@ -8,8 +8,8 @@
 // This avoids the ambiguity of `import.meta.dirname` inside this utility,
 // which would otherwise resolve to `backend/shared/`.
 
-import { load } from "jsr:@std/dotenv";
-import { resolve } from "jsr:@std/path";
+import { load } from "@std/dotenv";
+import { resolve } from "@std/path";
 
 export interface LoadEnvOptions {
   /** Caller's directory. Use `import.meta.dirname`. Required. */
@@ -28,7 +28,9 @@ export interface LoadEnvOptions {
  * await loadProjectEnv({ from: import.meta.dirname });
  * ```
  */
-export async function loadProjectEnv(opts: LoadEnvOptions): Promise<string | null> {
+export async function loadProjectEnv(
+  opts: LoadEnvOptions,
+): Promise<string | null> {
   // Caller is something like backend/main.ts → backend/.
   // Project root is one level up from there.
   const projectRoot = resolve(opts.from, "..");

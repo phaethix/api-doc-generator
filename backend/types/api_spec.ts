@@ -5,8 +5,8 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 // OutputFormat: enum, usable as both value and type
 export enum OutputFormat {
   Markdown = "markdown",
-  HTML     = "html",
-  JSON     = "json",
+  HTML = "html",
+  JSON = "json",
 }
 
 // Schema: recursive, supports nested objects/arrays

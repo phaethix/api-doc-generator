@@ -3,7 +3,11 @@ import { handleGenerate } from "./handlers/generate.ts";
 import { handleHealth } from "./handlers/health.ts";
 import { handleOpenAPIImport } from "./handlers/openapi.ts";
 import { handleStatic } from "./handlers/static.ts";
-import { handleAIPing, handleAIGenerateOpenAPI, handleAIGenerateOpenAPIStream } from "./handlers/ai.ts";
+import {
+  handleAIGenerateOpenAPI,
+  handleAIGenerateOpenAPIStream,
+  handleAIPing,
+} from "./handlers/ai.ts";
 
 type Handler = (req: Request) => Response | Promise<Response>;
 

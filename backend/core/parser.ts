@@ -1,4 +1,9 @@
-import type { ApiSpec, ApiInfo, PathItem, Operation } from "../types/api_spec.ts";
+import type {
+  ApiInfo,
+  ApiSpec,
+  Operation,
+  PathItem,
+} from "../types/api_spec.ts";
 
 export class ParseError extends Error {
   constructor(
@@ -33,7 +38,7 @@ export function isApiInfo(x: unknown): x is ApiInfo {
   if (typeof x !== "object" || x === null) return false;
   const o = x as Record<string, unknown>;
   return typeof o["title"] === "string" &&
-         typeof o["version"] === "string";
+    typeof o["version"] === "string";
 }
 
 export function isPathItem(x: unknown): x is PathItem {
@@ -47,5 +52,5 @@ export function isOperation(x: unknown): x is Operation {
   if (typeof x !== "object" || x === null) return false;
   const o = x as Record<string, unknown>;
   return typeof o["summary"] === "string" &&
-         typeof o["responses"] === "object" && o["responses"] !== null;
+    typeof o["responses"] === "object" && o["responses"] !== null;
 }
