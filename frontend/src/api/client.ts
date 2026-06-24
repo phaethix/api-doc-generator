@@ -51,7 +51,18 @@ export async function checkHealth(): Promise<HealthResponse> {
     throw new Error(await parseErrorResponse(res));
   }
 
-  return res.json() as Promise<HealthResponse>;
+  const text = await res.text();
+  if (!text) {
+    throw new Error(`Empty response from server (status: ${res.status})`);
+  }
+
+  try {
+    return JSON.parse(text) as HealthResponse;
+  } catch {
+    throw new Error(
+      `Invalid JSON response from /health (status: ${res.status}): ${text.slice(0, 200)}`,
+    );
+  }
 }
 
 export async function generateDoc(
@@ -114,9 +125,25 @@ export async function generateOpenAPI(
     body: JSON.stringify({ description, scope }),
   });
 
-  const data = await res.json() as GenerateOpenAPIResponse;
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res));
+  }
 
-  if (!res.ok || !data.ok) {
+  const text = await res.text();
+  if (!text) {
+    throw new Error(`Empty response from server (status: ${res.status})`);
+  }
+
+  let data: GenerateOpenAPIResponse;
+  try {
+    data = JSON.parse(text) as GenerateOpenAPIResponse;
+  } catch {
+    throw new Error(
+      `Invalid JSON response from server (status: ${res.status}): ${text.slice(0, 200)}`,
+    );
+  }
+
+  if (!data.ok) {
     const msg = data.error || `Request failed: ${res.status}`;
     throw new Error(msg);
   }
