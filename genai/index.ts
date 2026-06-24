@@ -16,6 +16,9 @@ import type {
   ChatResponse,
   Usage,
   Provider,
+  ResponseFormat,
+  OpenAPIScope,
+  GenerateOpenAPIResult,
 } from "./types.ts";
 
 // ── Errors ──────────────────────────────────────────
@@ -30,6 +33,9 @@ export type {
   ChatResponse,
   Usage,
   Provider,
+  ResponseFormat,
+  OpenAPIScope,
+  GenerateOpenAPIResult,
 };
 
 // ── Client ──────────────────────────────────────────
@@ -38,6 +44,17 @@ export { LLMClient };
 // ── Providers ───────────────────────────────────────
 export { ChatCompletionsProvider };
 export type { ChatCompletionsOptions };
+
+// ── Phase 2: Structured output (OpenAPI generation) ─
+export {
+  generateOpenAPIEndpoint,
+  generateOpenAPIDocument,
+  ENDPOINT_SCHEMA_NAME,
+  DOCUMENT_SCHEMA_NAME,
+  endpointSchema,
+  documentSchema,
+} from "./openapi.ts";
+export { endpointSchema as endpointJSONSchema, documentSchema as documentJSONSchema } from "./schemas/index.ts";
 
 // ── Factory ─────────────────────────────────────────
 export interface LLMClientConfig {

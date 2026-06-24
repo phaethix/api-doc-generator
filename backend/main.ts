@@ -65,4 +65,5 @@ if (import.meta.main) {
   console.log(`API Doc Generator running on http://localhost:${port}`);
   console.log(`  Frontend: http://localhost:${port}/`);
   console.log(`  API:      http://localhost:${port}/health, /generate, /import/openapi`);
+  console.log(`  AI:       http://localhost:${port}/ai/ping, /ai/generate-openapi`);
 }

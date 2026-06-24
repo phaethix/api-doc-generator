@@ -155,13 +155,50 @@ export async function handleAIPing(_req: Request): Promise<Response> {
 
 ## 10. 后续阶段预览
 
-| # | 阶段 | 对应功能 |
-|---|------|----------|
-| 1 | ✅ LLM 基础调用 | `/ai/ping` 端点，错误分类，超时控制 |
-| 2 | 结构化输出 | AI 严格输出 OpenAPI JSON (JSON Mode / Tool Calling) |
-| 3 | Streaming | 润色过程打字机效果 |
-| 4 | Prompt 工程 | 不同 Prompt 质量对比 |
-| 5 | Token 优化 | 缓存、成本分析 |
-| 6 | RAG 基础 | 文档智能问答 |
-| 7 | RAG 进阶 | 混合检索 + Rerank |
-| 8 | Function Calling | AI 跳转接口、生成测试 |
+| # | 阶段 | 对应功能 | 状态 |
+|---|------|----------|------|
+| 1 | LLM 基础调用 | `/ai/ping` 端点，错误分类，超时控制 | ✅ 完成 |
+| 2 | 结构化输出 | AI 严格输出 OpenAPI JSON (JSON Schema / JSON Mode) | ✅ 完成 |
+| 3 | Streaming | 润色过程打字机效果 | 📋 待规划 |
+| 4 | Prompt 工程 | 不同 Prompt 质量对比 | 📋 待规划 |
+| 5 | Token 优化 | 缓存、成本分析 | 📋 待规划 |
+| 6 | RAG 基础 | 文档智能问答 | 📋 待规划 |
+| 7 | RAG 进阶 | 混合检索 + Rerank | 📋 待规划 |
+| 8 | Function Calling | AI 跳转接口、生成测试 | 📋 待规划 |
+
+## 11. 阶段 2 实施摘要（2026-06-24）
+
+### 11.1 新增文件
+- `genai/schemas/endpoint.ts` — 单 endpoint JSON Schema
+- `genai/schemas/document.ts` — 完整 OpenAPI 3.0.3 JSON Schema
+- `genai/schemas/index.ts` — 统一导出
+- `genai/openapi.ts` — `generateOpenAPIEndpoint` / `generateOpenAPIDocument` 高层 API
+- `genai/tests/openapi_test.ts` — 30 个测试用例（阶段 2 新增 18 个）
+
+### 11.2 修改文件
+- `genai/types.ts` — 加 `ResponseFormat`, `GenerateOpenAPIResult`, `OpenAPIScope`
+- `genai/providers/chat_completions.ts` — 序列化 `response_format`，捕获 400 响应体
+- `genai/index.ts` — 导出新阶段 API
+- `backend/handlers/ai.ts` — 新增 `handleAIGenerateOpenAPI`
+- `backend/router.ts` — 注册 `/ai/generate-openapi` 路由
+- `backend/main.ts` — 启动日志增加 AI 端点
+- `backend/tests/integration_test.ts` — 6 个新集成测试
+
+### 11.3 核心特性
+- **JSON Schema 强约束**：首选 `response_format.type=json_schema` + `strict: true`
+- **智能降级**：当 provider 不支持 `json_schema` 时，自动降级到 `json_object` + 本地 JSON Schema 校验
+- **错误诊断**：Provider 捕获 400 响应体，将 provider 的错误信息包含在 `LLMError.message` 中
+- **双粒度生成**：`scope: "endpoint"` 单接口，`scope: "document"` 完整 OpenAPI 3.0.3
+- **端到端兼容**：生成的 JSON 结构符合现有 `/generate` pipeline 的 `isApiSpec` 校验
+
+### 11.4 测试覆盖（合计 90 个）
+- genai: 30 个（12 阶段 1 + 18 阶段 2）
+- backend: 60 个（54 原有 + 6 新增 AI 端点测试）
+
+### 11.5 端到端验证
+```bash
+curl -X POST 'http://localhost:8080/ai/generate-openapi' \
+  -H 'Content-Type: application/json' \
+  -d '{"description": "用户管理系统，包含查询用户列表和根据ID查询用户详情两个接口", "scope": "document"}'
+```
+返回合法 OpenAPI 3.0.3 JSON，`format_used: "json_schema"`。

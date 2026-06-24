@@ -3,7 +3,7 @@ import { handleGenerate } from "./handlers/generate.ts";
 import { handleHealth } from "./handlers/health.ts";
 import { handleOpenAPIImport } from "./handlers/openapi.ts";
 import { handleStatic } from "./handlers/static.ts";
-import { handleAIPing } from "./handlers/ai.ts";
+import { handleAIPing, handleAIGenerateOpenAPI } from "./handlers/ai.ts";
 
 type Handler = (req: Request) => Response | Promise<Response>;
 
@@ -33,6 +33,11 @@ const routes: Route[] = [
     method: "POST",
     pattern: new URLPattern({ pathname: "/ai/ping" }),
     handler: handleAIPing,
+  },
+  {
+    method: "POST",
+    pattern: new URLPattern({ pathname: "/ai/generate-openapi" }),
+    handler: handleAIGenerateOpenAPI,
   },
   {
     method: "GET",
