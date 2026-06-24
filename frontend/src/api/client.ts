@@ -4,6 +4,24 @@ import type {
   OutputFormat,
 } from "../types";
 
+export interface GenerateOpenAPIRequest {
+  description: string;
+  scope?: "endpoint" | "document";
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export interface GenerateOpenAPIResponse {
+  ok: boolean;
+  openapi: unknown;
+  scope: "endpoint" | "document";
+  format_used: string;
+  usage: { promptTokens: number; completionTokens: number };
+  model: string;
+  error?: string;
+  category?: string;
+}
+
 const BASE_URL = "";
 
 async function parseErrorResponse(res: Response): Promise<string> {
@@ -82,4 +100,26 @@ export async function importOpenAPI(
   const content = await res.text();
 
   return { content, contentType };
+}
+
+export async function generateOpenAPI(
+  description: string,
+  scope: "endpoint" | "document" = "endpoint",
+): Promise<GenerateOpenAPIResponse> {
+  const res = await fetch(`${BASE_URL}/ai/generate-openapi`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ description, scope }),
+  });
+
+  const data = await res.json() as GenerateOpenAPIResponse;
+
+  if (!res.ok || !data.ok) {
+    const msg = data.error || `请求失败: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data;
 }

@@ -6,10 +6,10 @@ import { FormatSelector } from "./components/FormatSelector";
 import { ToastContainer, showToast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import type { OutputFormat } from "./types";
-import { generateDoc, importOpenAPI } from "./api/client";
+import { generateDoc, importOpenAPI, generateOpenAPI } from "./api/client";
 import { sampleApiSpec, sampleOpenAPI } from "./utils/sample";
 
-type InputMode = "spec" | "openapi";
+type InputMode = "spec" | "openapi" | "ai";
 
 export default function App() {
   const [inputMode, setInputMode] = useState<InputMode>("spec");
@@ -57,6 +57,33 @@ export default function App() {
   }, []);
 
   const handleGenerate = useCallback(async () => {
+    if (inputMode === "ai") {
+      // AI 生成模式
+      if (!inputValue.trim()) {
+        setInputError("请输入接口描述");
+        showToast("error", "请输入接口描述");
+        return;
+      }
+
+      setInputError(null);
+      setError(null);
+      setIsLoading(true);
+
+      try {
+        const result = await generateOpenAPI(inputValue.trim(), "endpoint");
+        const openapiJson = JSON.stringify(result.openapi, null, 2);
+        setOutputContent(openapiJson);
+        showToast("success", `AI 生成成功！使用格式：${result.format_used}`);
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : "AI 生成失败";
+        setError(errMsg);
+        showToast("error", errMsg);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     if (!inputValue.trim()) {
       setInputError("请输入 API 规范");
       showToast("error", "请输入 API 规范");
@@ -178,87 +205,142 @@ export default function App() {
           >
             OpenAPI 导入
           </button>
+          <button
+            type="button"
+            onClick={() => setInputMode("ai")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${
+              inputMode === "ai"
+                ? "bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            AI 生成
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-220px)]">
           {/* Left Panel - Input */}
           <div className="card flex flex-col p-4 h-full">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                {inputMode === "spec" ? "API 规范输入" : "OpenAPI 规范导入"}
-              </h2>
-              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
-                JSON 格式
-              </span>
-            </div>
+            {inputMode === "ai" ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                    AI 生成接口
+                  </h2>
+                  <span className="text-xs text-purple-500 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                    自然语言描述
+                  </span>
+                </div>
 
-            <div className="flex-1">
-              <JsonEditor
-                value={inputValue}
-                onChange={setInputValue}
-                label=""
-                error={inputError}
-                placeholder={
-                  inputMode === "spec"
-                    ? '例如：{\n  "info": { "title": "My API", "version": "1.0" },\n  "paths": {...}\n}'
-                    : '粘贴 OpenAPI 3.0 规范，例如：\n{\n  "openapi": "3.0.0",\n  "info": {...},\n  "paths": {...}\n}'
-                }
-                height="400px"
-              />
-            </div>
+                <div className="flex-1">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={"用自然语言描述你想要生成的 API 接口，例如：\n用户登录接口，接收手机号和验证码，返回 JWT token\n\n或者更详细的描述：\n一个待办事项服务，支持创建、查询、更新、删除待办事项"}
+                    className="w-full h-[400px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                  {inputError && (
+                    <p className="mt-2 text-sm text-red-500">{inputError}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                    {inputMode === "spec" ? "API 规范输入" : "OpenAPI 规范导入"}
+                  </h2>
+                  <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
+                    JSON 格式
+                  </span>
+                </div>
+
+                <div className="flex-1">
+                  <JsonEditor
+                    value={inputValue}
+                    onChange={setInputValue}
+                    label=""
+                    error={inputError}
+                    placeholder={
+                      inputMode === "spec"
+                        ? '例如：{\n  "info": { "title": "My API", "version": "1.0" },\n  "paths": {...}\n}'
+                        : '粘贴 OpenAPI 3.0 规范，例如：\n{\n  "openapi": "3.0.0",\n  "info": {...},\n  "paths": {...}\n}'
+                    }
+                    height="400px"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="mt-4 space-y-3">
-              <FormatSelector value={outputFormat} onChange={setOutputFormat} />
+              {inputMode === "ai" ? (
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isLoading || !inputValue.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      AI 生成中...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      AI 生成接口
+                    </>
+                  )}
+                </button>
+              ) : (
+                <FormatSelector value={outputFormat} onChange={setOutputFormat} />
+              )}
 
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isLoading}
-                className="w-full btn-primary py-3 text-base font-semibold"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    生成中...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    生成文档
-                  </>
-                )}
-              </button>
+              {inputMode !== "ai" && (
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isLoading}
+                  className="w-full btn-primary py-3 text-base font-semibold"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      生成文档
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
           {/* Right Panel - Output */}
           <div className="card flex flex-col p-4 h-full">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">输出结果</h2>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">
+              {inputMode === "ai" ? "AI 生成的 OpenAPI 规范" : "输出结果"}
+            </h2>
             <div className="flex-1 min-h-[400px]">
               <OutputPanel
                 content={outputContent}
-                format={outputFormat}
+                format={inputMode === "ai" ? "json" : outputFormat}
                 loading={isLoading && !outputContent}
                 error={error}
                 onCopy={handleCopy}
