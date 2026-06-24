@@ -154,16 +154,13 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
 
   try {
     const response = await client.complete(request);
-    const parsed = parseAndValidate(response.content, scope);
-    // Post-process: if AI returned an invalid path but we extracted a path
-    // from the description, use the extracted one.
-    const fixed = fixPathIfNeeded(parsed, extractedPath, scope);
-    return buildResult(fixed, "json_schema", response, scope);
+    const parsed = parseAndValidate(response.content, scope, extractedPath);
+    return buildResult(parsed, "json_schema", response, scope);
   } catch (err) {
     // If the provider rejected the json_schema (model doesn't support it),
     // fall back to json_object + local validation.
     if (isSchemaUnsupportedError(err)) {
-      return generateWithJsonObject(client, request, scope);
+      return generateWithJsonObject(client, request, scope, extractedPath);
     }
     throw err;
   }
@@ -175,6 +172,7 @@ async function generateWithJsonObject(
   client: LLMClient,
   originalReq: ChatRequest,
   scope: OpenAPIScope,
+  extractedPath: string | null = null,
 ): Promise<GenerateOpenAPIResult> {
   const fallbackReq: ChatRequest = {
     ...originalReq,
@@ -182,14 +180,14 @@ async function generateWithJsonObject(
   };
 
   const response = await client.complete(fallbackReq);
-  const parsed = parseAndValidate(response.content, scope);
+  const parsed = parseAndValidate(response.content, scope, extractedPath);
 
   return buildResult(parsed, "json_object", response, scope);
 }
 
 // ── Helpers ──────────────────────────────────────────
 
-function parseAndValidate(content: string, scope: OpenAPIScope): unknown {
+function parseAndValidate(content: string, scope: OpenAPIScope, extractedPath: string | null = null): unknown {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
@@ -202,6 +200,10 @@ function parseAndValidate(content: string, scope: OpenAPIScope): unknown {
       "openapi-generator",
     );
   }
+
+  // Post-process: fix the path BEFORE validation, so we don't reject valid
+  // AI output just because the provider didn't enforce minLength.
+  parsed = fixPathIfNeeded(parsed, extractedPath, scope);
 
   // Local validation — check the bare minimum shape.
   try {
