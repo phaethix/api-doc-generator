@@ -7,7 +7,7 @@ import { ToastContainer, showToast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import type { OutputFormat } from "./types";
 import { generateDoc, importOpenAPI, generateOpenAPIStream } from "./api/client";
-import { sampleApiSpec, sampleOpenAPI } from "./utils/sample";
+import { sampleApiSpec, sampleOpenAPI, sampleAIDescription } from "./utils/sample";
 
 type InputMode = "spec" | "openapi" | "ai";
 
@@ -250,7 +250,13 @@ export default function App() {
   }, [outputContent, outputFormat]);
 
   const handleLoadSample = useCallback(() => {
-    setInputValue(inputMode === "openapi" ? sampleOpenAPI : sampleApiSpec);
+    if (inputMode === "ai") {
+      setInputValue(sampleAIDescription);
+    } else if (inputMode === "openapi") {
+      setInputValue(sampleOpenAPI);
+    } else {
+      setInputValue(sampleApiSpec);
+    }
     setOutputContent("");
     setError(null);
     setInputError(null);
