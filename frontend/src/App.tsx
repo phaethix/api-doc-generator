@@ -6,7 +6,7 @@ import { FormatSelector } from "./components/FormatSelector";
 import { ToastContainer, showToast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import type { OutputFormat } from "./types";
-import { generateDoc, importOpenAPI, generateOpenAPI } from "./api/client";
+import { generateDoc, importOpenAPI, generateOpenAPIStream } from "./api/client";
 import { sampleApiSpec, sampleOpenAPI } from "./utils/sample";
 
 type InputMode = "spec" | "openapi" | "ai";
@@ -58,7 +58,7 @@ export default function App() {
 
   const handleGenerate = useCallback(async () => {
     if (inputMode === "ai") {
-      // AI 生成模式
+      // AI 生成模式 - 使用流式接口
       if (!inputValue.trim()) {
         setInputError("请输入接口描述");
         showToast("error", "请输入接口描述");
@@ -68,12 +68,50 @@ export default function App() {
       setInputError(null);
       setError(null);
       setIsLoading(true);
+      setOutputContent(""); // 清空之前的输出
 
       try {
-        const result = await generateOpenAPI(inputValue.trim(), "endpoint");
-        const openapiJson = JSON.stringify(result.openapi, null, 2);
-        setOutputContent(openapiJson);
-        showToast("success", `AI 生成成功！使用格式：${result.format_used}`);
+        let finalResult: { openapi: unknown; format_used: string } | null = null;
+        let streamError: Error | null = null;
+        
+        await generateOpenAPIStream(
+          inputValue.trim(),
+          "endpoint",
+          (event: { type: string; [key: string]: unknown }) => {
+            if (event.type === "delta") {
+              // 实时更新输出内容
+              const content = event.content as string;
+              setOutputContent((prev) => prev + content);
+            } else if (event.type === "done") {
+              // 接收完整结果
+              const result = event.result as {
+                openapi: unknown;
+                format_used: string;
+              };
+              finalResult = {
+                openapi: result.openapi,
+                format_used: result.format_used,
+              };
+            } else if (event.type === "error") {
+              // 捕获错误但不抛出，避免被 client.ts 的 catch 屏蔽
+              const message = event.message as string;
+              streamError = new Error(message);
+            }
+          },
+        );
+
+        // 检查流处理过程中是否发生错误
+        if (streamError) {
+          throw streamError;
+        }
+
+        // 使用类型断言，因为 TypeScript 无法跟踪回调函数中的变量修改
+        if (finalResult !== null) {
+          const result = finalResult as { openapi: unknown; format_used: string };
+          const openapiJson = JSON.stringify(result.openapi, null, 2);
+          setOutputContent(openapiJson);
+          showToast("success", `AI 生成成功！使用格式：${result.format_used}`);
+        }
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : "AI 生成失败";
         setError(errMsg);
