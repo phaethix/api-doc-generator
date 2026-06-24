@@ -20,8 +20,8 @@ export function createLLMClient(): LLMClient {
   }
 
   const baseUrl =
-    Deno.env.get("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
-  const model = Deno.env.get("LLM_MODEL") ?? "agnes";
+    Deno.env.get("OPENAI_BASE_URL") ?? "https://api.agnes-ai.com/v1";
+  const model = Deno.env.get("LLM_MODEL") ?? "agnes-20-flash";
 
   const provider: Provider = new OpenAIProvider(apiKey, baseUrl, model);
   return new LLMClient(provider);
