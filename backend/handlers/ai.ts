@@ -23,7 +23,7 @@ const STATUS_BY_CATEGORY: Record<LLMErrorCategory, number> = {
   unknown: 500,
 };
 
-// ── /ai/ping ─────────────────────────────────────────
+// /ai/ping
 
 export async function handleAIPing(_req: Request): Promise<Response> {
   try {
@@ -48,7 +48,7 @@ export async function handleAIPing(_req: Request): Promise<Response> {
   }
 }
 
-// ── /ai/generate-openapi ─────────────────────────────
+// /ai/generate-openapi
 
 interface GenerateOpenAPIBody {
   description: string;
@@ -112,7 +112,7 @@ export async function handleAIGenerateOpenAPI(req: Request): Promise<Response> {
   }
 }
 
-// ── Error normalization ──────────────────────────────
+// Error normalization
 
 function toErrorResponse(err: unknown): Response {
   if (err instanceof LLMError) {

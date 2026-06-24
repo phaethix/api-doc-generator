@@ -11,7 +11,7 @@ import {
 import type { ChatRequest, ChatResponse, Provider } from "../types.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
-// ── Mock helpers ───────────────────────────────────
+// Mock helpers
 class MockProvider implements Provider {
   constructor(
     private response: string,
@@ -42,7 +42,7 @@ function createCapture() {
   return { provider: new CaptureProvider(), capture };
 }
 
-// ── Fetch shim helper ──────────────────────────────
+// Fetch shim helper
 // Temporarily replace globalThis.fetch to return canned responses.
 function withMockFetch<T>(mock: () => Response | Promise<Response>, fn: () => Promise<T>): Promise<T> {
   const original = globalThis.fetch;
@@ -65,7 +65,7 @@ function okResponse(content = "hello", model = "test-model") {
   );
 }
 
-// ── LLMClient forwarding ───────────────────────────
+// LLMClient forwarding
 
 Deno.test("LLMClient.complete forwards messages and returns provider content", async () => {
   const client = new LLMClient(new MockProvider("hello from mock"));
@@ -96,7 +96,7 @@ Deno.test("LLMClient passes through temperature and maxTokens to provider", asyn
   assertEquals(capture.req.messages.length, 1);
 });
 
-// ── LLMClient validation ───────────────────────────
+// LLMClient validation
 
 Deno.test("LLMClient rejects empty messages", async () => {
   const client = new LLMClient(new MockProvider("should not be called"));
@@ -131,7 +131,7 @@ Deno.test("LLMClient rejects non-positive maxTokens", async () => {
   );
 });
 
-// ── Factory ────────────────────────────────────────
+// Factory
 
 Deno.test("createLLMClient throws LLMConfigError when API key is missing", async () => {
   const original = Deno.env.get("OPENAI_API_KEY");
@@ -178,7 +178,7 @@ Deno.test("createLLMClient falls back to env when config fields are omitted", ()
   }
 });
 
-// ── ChatCompletionsProvider ────────────────────────
+// ChatCompletionsProvider
 
 Deno.test("ChatCompletionsProvider parses a successful OpenAI-shaped response", async () => {
   const provider = new ChatCompletionsProvider("key", "https://example.com/v1", "test-model");

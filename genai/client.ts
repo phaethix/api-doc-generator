@@ -20,7 +20,7 @@ export class LLMClient {
     return await this.provider.chat(req);
   }
 
-  // ── Request validation ────────────────────────────
+  // Request validation
   private validate(req: ChatRequest): void {
     if (!req.messages || req.messages.length === 0) {
       throw new Error("LLMClient.complete: at least one message is required");

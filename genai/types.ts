@@ -2,7 +2,7 @@
 // These types abstract over concrete LLM providers so the rest of the
 // codebase only depends on this interface, not any specific backend.
 
-// ── Chat message ────────────────────────────────────
+// Chat message
 export type ChatRole = "system" | "user" | "assistant";
 
 export interface ChatMessage {
@@ -10,7 +10,7 @@ export interface ChatMessage {
   content: string;
 }
 
-// ── Response format (structured output) ─────────────
+// Response format (structured output)
 // Phase 2: restrict model output to valid JSON shapes.
 //
 //   "text"                  — default, free-form
@@ -30,7 +30,7 @@ export type ResponseFormat =
       };
     };
 
-// ── Request / Response ──────────────────────────────
+// Request / Response
 export interface ChatRequest {
   messages: ChatMessage[];
   temperature?: number;
@@ -56,14 +56,14 @@ export interface ChatResponse {
   formatUsed?: ResponseFormat["type"];
 }
 
-// ── Provider interface ──────────────────────────────
+// Provider interface
 // Each LLM backend (Agnes, OpenAI, DeepSeek, Ollama, …) implements this.
 // The LLMClient only depends on this abstraction.
 export interface Provider {
   chat(req: ChatRequest): Promise<ChatResponse>;
 }
 
-// ── OpenAPI generator output ────────────────────────
+// OpenAPI generator output
 // Phase 2: returned by the high-level generator so callers know
 // exactly what shape of OpenAPI JSON they received.
 export type OpenAPIScope = "endpoint" | "document";

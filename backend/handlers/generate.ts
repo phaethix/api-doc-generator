@@ -4,7 +4,7 @@ import { generate } from "../core/generator.ts";
 import { render } from "../core/renderer.ts";
 import { resolveFormat, CONTENT_TYPES, readBody, handleApiError, corsHeaders } from "../shared/utils.ts";
 
-// ── Custom business error ─────────────────────────
+// Custom business error
 export class GenerateError extends Error {
   constructor(
     message: string,
@@ -15,7 +15,7 @@ export class GenerateError extends Error {
   }
 }
 
-// ── Main handler ──────────────────────────────────
+// Main handler
 export async function handleGenerate(req: Request): Promise<Response> {
   const format = resolveFormat(req);
 

@@ -156,7 +156,7 @@ Deno.test("Wrong method on /generate returns 404", async () => {
   assertEquals(res.status, 404);
 });
 
-// ── /ai/generate-openapi ─────────────────────────────
+// /ai/generate-openapi
 
 // The AI handler calls createLLMClient() which reads OPENAI_API_KEY from env.
 // We don't want real API calls in tests, so we stub a fake key + mock fetch.

@@ -11,13 +11,13 @@
 import type { ChatRequest, ChatResponse, Provider } from "../types.ts";
 import { LLMError, type LLMErrorCategory } from "../errors.ts";
 
-// ── Options ─────────────────────────────────────────
+// Options
 export interface ChatCompletionsOptions {
   /** Maximum time to wait for a response, in milliseconds. Default: 30_000. */
   timeoutMs?: number;
 }
 
-// ── Provider ────────────────────────────────────────
+// Provider
 export class ChatCompletionsProvider implements Provider {
   readonly name = "chat-completions";
 
@@ -116,7 +116,7 @@ export class ChatCompletionsProvider implements Provider {
     }
   }
 
-  // ── Internals ─────────────────────────────────────
+// Internals
   private toLLMError(status: number, statusText: string, body?: string): LLMError {
     const category = categorizeStatus(status);
     const message = formatErrorMessage(category, status, statusText, body);

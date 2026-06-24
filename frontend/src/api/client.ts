@@ -25,13 +25,13 @@ export interface GenerateOpenAPIResponse {
 const BASE_URL = "";
 
 async function parseErrorResponse(res: Response): Promise<string> {
-  let errorMsg = `请求失败: ${res.status}`;
+  let errorMsg = `Request failed: ${res.status}`;
   try {
     const errData = await res.json();
     if (errData.error) {
       errorMsg = errData.error;
       if (errData.field) {
-        errorMsg += ` (字段: ${errData.field})`;
+        errorMsg += ` (field: ${errData.field})`;
       }
     }
   } catch {
@@ -117,7 +117,7 @@ export async function generateOpenAPI(
   const data = await res.json() as GenerateOpenAPIResponse;
 
   if (!res.ok || !data.ok) {
-    const msg = data.error || `请求失败: ${res.status}`;
+    const msg = data.error || `Request failed: ${res.status}`;
     throw new Error(msg);
   }
 

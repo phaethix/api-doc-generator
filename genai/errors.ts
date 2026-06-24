@@ -6,7 +6,7 @@
 //   - LLMConfigError : raised when the client is misconfigured
 //                      (missing API key, invalid parameters)
 
-// ── Error categories ────────────────────────────────
+// Error categories
 export type LLMErrorCategory =
   | "auth"        // 401 / 403 — bad or missing key
   | "rate_limit"  // 429 — too many requests
@@ -14,7 +14,7 @@ export type LLMErrorCategory =
   | "network"     // DNS / timeout / connection refused
   | "unknown";    // any other failure
 
-// ── Provider errors ─────────────────────────────────
+// Provider errors
 export class LLMError extends Error {
   constructor(
     message: string,
@@ -38,7 +38,7 @@ export class LLMError extends Error {
   }
 }
 
-// ── Configuration errors ────────────────────────────
+// Configuration errors
 export class LLMConfigError extends Error {
   constructor(message: string) {
     super(message);

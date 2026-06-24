@@ -1,10 +1,10 @@
-// shared/utils.ts — 跨模块共享的工具函数，消除重复代码
+// shared/utils.ts — Cross-module utility functions, eliminate duplicate code.
 
 import { OutputFormat } from "../types/api_spec.ts";
 import { ParseError } from "../core/parser.ts";
 import { GenerateError } from "../handlers/generate.ts";
 
-// ── API 路径判断 ─────────────────────────────────
+// API path detection
 /**
  * Determine if a path is an API endpoint.
  * API endpoints are: /health, /generate, /import/*
@@ -17,14 +17,14 @@ export function isApiPath(pathname: string): boolean {
          pathname.startsWith("/api/");
 }
 
-// ── Content-Type 映射 ────────────────────────────
+// Content-Type mapping
 export const CONTENT_TYPES: Record<OutputFormat, string> = {
   [OutputFormat.Markdown]: "text/markdown; charset=utf-8",
   [OutputFormat.HTML]:     "text/html; charset=utf-8",
   [OutputFormat.JSON]:     "application/json; charset=utf-8",
 };
 
-// ── 格式解析: query param → Accept header → default
+// Format parsing: query param → Accept header → default
 export function resolveFormat(req: Request): OutputFormat {
   const url = new URL(req.url);
   const q = url.searchParams.get("format")?.toLowerCase();
@@ -41,7 +41,7 @@ export function resolveFormat(req: Request): OutputFormat {
   return OutputFormat.Markdown;
 }
 
-// ── CORS 头 ──────────────────────────────────────
+// CORS headers
 const CORS_ORIGINS = Deno.env.get("CORS_ALLOWED_ORIGINS") ?? "*";
 
 export function corsHeaders(): Record<string, string> {
@@ -52,7 +52,7 @@ export function corsHeaders(): Record<string, string> {
   };
 }
 
-// ── 请求体大小限制 (5MB) ─────────────────────────
+// Request body size limit (5MB)
 const MAX_BODY_SIZE = 5 * 1024 * 1024;
 
 /**
@@ -76,7 +76,7 @@ export async function readBody(req: Request): Promise<unknown> {
   }
 }
 
-// ── 统一错误处理 (消除 generate / openapi 的样板代码) ──
+// Unified error handling
 export function handleApiError(e: unknown, routeName: string): Response {
   if (e instanceof ParseError) {
     return new Response(
@@ -115,7 +115,7 @@ export function handleApiError(e: unknown, routeName: string): Response {
   );
 }
 
-// ── OPTIONS (CORS preflight) 响应 ────────────────
+// OPTIONS (CORS preflight) response
 export function handleOptions(): Response {
   return new Response(null, {
     status: 204,

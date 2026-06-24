@@ -1,15 +1,15 @@
 // types/api_spec.ts
-// ── HttpMethod: union type vs enum ─────────────────
+// HttpMethod: union type vs enum
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-// ── OutputFormat: enum, usable as both value and type ──
+// OutputFormat: enum, usable as both value and type
 export enum OutputFormat {
   Markdown = "markdown",
   HTML     = "html",
   JSON     = "json",
 }
 
-// ── Schema: recursive, supports nested objects/arrays ──
+// Schema: recursive, supports nested objects/arrays
 export interface Schema {
   type: "string" | "number" | "integer" | "boolean" | "array" | "object";
   description?: string;
@@ -18,7 +18,7 @@ export interface Schema {
   properties?: Record<string, Schema>;
 }
 
-// ── Parameter ──────────────────────────────────────
+// Parameter
 export interface Parameter {
   name: string;
   in: "query" | "path" | "header" | "cookie";
@@ -27,20 +27,20 @@ export interface Parameter {
   schema: Schema;
 }
 
-// ── ApiResponse ────────────────────────────────────
+// ApiResponse
 export interface ApiResponse {
   description: string;
   content?: Record<string, { schema: Schema }>;
 }
 
-// ── RequestBody ────────────────────────────────────
+// RequestBody
 export interface RequestBody {
   description?: string;
   required?: boolean;
   content: Record<string, { schema: Schema }>;
 }
 
-// ── Operation ──────────────────────────────────────
+// Operation
 export interface Operation {
   summary: string;
   description?: string;
@@ -50,7 +50,7 @@ export interface Operation {
   responses: Record<string, ApiResponse>;
 }
 
-// ── PathItem ───────────────────────────────────────
+// PathItem
 export interface PathItem {
   summary?: string;
   description?: string;
@@ -61,14 +61,14 @@ export interface PathItem {
   patch?: Operation;
 }
 
-// ── ApiInfo ────────────────────────────────────────
+// ApiInfo
 export interface ApiInfo {
   title: string;
   version: string;
   description?: string;
 }
 
-// ── ApiSpec (top-level) ────────────────────────────
+// ApiSpec (top-level)
 export interface ApiSpec {
   info: ApiInfo;
   paths: Record<string, PathItem>;

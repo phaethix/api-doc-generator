@@ -21,11 +21,11 @@ import type {
   GenerateOpenAPIResult,
 } from "./types.ts";
 
-// ── Errors ──────────────────────────────────────────
+// Errors
 export { LLMError, LLMConfigError };
 export type { LLMErrorCategory };
 
-// ── Types ───────────────────────────────────────────
+// Types
 export type {
   ChatRole,
   ChatMessage,
@@ -38,14 +38,14 @@ export type {
   GenerateOpenAPIResult,
 };
 
-// ── Client ──────────────────────────────────────────
+// Client
 export { LLMClient };
 
-// ── Providers ───────────────────────────────────────
+// Providers
 export { ChatCompletionsProvider };
 export type { ChatCompletionsOptions };
 
-// ── Phase 2: Structured output (OpenAPI generation) ─
+// Phase 2: Structured output (OpenAPI generation)
 export {
   generateOpenAPIEndpoint,
   generateOpenAPIDocument,
@@ -56,7 +56,7 @@ export {
 } from "./openapi.ts";
 export { endpointSchema as endpointJSONSchema, documentSchema as documentJSONSchema } from "./schemas/index.ts";
 
-// ── Factory ─────────────────────────────────────────
+// Factory
 export interface LLMClientConfig {
   /** API key for the provider. Required unless present in env. */
   apiKey: string;

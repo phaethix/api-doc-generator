@@ -14,7 +14,7 @@ import { LLMClient, LLMError, type LLMErrorCategory } from "./index.ts";
 import type { ChatRequest, ChatResponse, GenerateOpenAPIResult, OpenAPIScope, ResponseFormat } from "./types.ts";
 import { endpointSchema, documentSchema, ENDPOINT_SCHEMA_NAME, DOCUMENT_SCHEMA_NAME } from "./schemas/index.ts";
 
-// ── Prompt templates ─────────────────────────────────
+// Prompt templates
 const ENDPOINT_SYSTEM_PROMPT = `You are an expert API designer. Given a natural-language description, produce a single OpenAPI endpoint definition as a JSON object.
 
 Requirements:
@@ -31,13 +31,13 @@ CRITICAL — How to determine the "path" field:
   4. The path MUST start with "/" and use lowercase, hyphenated or RESTful conventions.
 
 Example:
-  User says: "用户登录接口，路径为 /api/v1/auth/login，接收手机号和验证码，返回JWT token"
+  User says: "User login endpoint, path is /api/v1/auth/login, accepts phone and verification code, returns JWT token"
   You output: { "method": "POST", "path": "/api/v1/auth/login", ... }
 
-  User says: "获取用户详情，根据ID查询"
+  User says: "Get user details by ID"
   You output: { "method": "GET", "path": "/users/{id}", ... }
 
-  User says: "创建订单接口"
+  User says: "Create order endpoint"
   You output: { "method": "POST", "path": "/orders", ... }`;
 
 const DOCUMENT_SYSTEM_PROMPT = `You are an expert API architect. Given a natural-language description of a service, produce a complete OpenAPI 3.0.3 document as a JSON object.
@@ -53,7 +53,7 @@ Requirements:
   "get": { "summary": "List users", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array" } } } } } }
 - You may include "components.schemas" for reusable models if helpful.`;
 
-// ── Public API ───────────────────────────────────────
+// Public API
 
 /**
  * Generate a single OpenAPI endpoint from a natural-language description.
@@ -95,7 +95,7 @@ export async function generateOpenAPIDocument(
   });
 }
 
-// ── Internal ─────────────────────────────────────────
+// Internal
 
 interface GenerateOpts {
   client: LLMClient;
@@ -130,7 +130,7 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
     `Description: ${description}\n\n` +
     `Produce the JSON object now — no explanation, no markdown.${pathDirective}`;
 
-  // ── Attempt 1: json_schema (strict) ─────────────
+  // Attempt 1: json_schema (strict)
   const strictFormat: ResponseFormat = {
     type: "json_schema",
     json_schema: {
@@ -166,7 +166,7 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
   }
 }
 
-// ── Fallback: json_object + local validation ─────────
+// Fallback: json_object + local validation
 
 async function generateWithJsonObject(
   client: LLMClient,
@@ -185,7 +185,7 @@ async function generateWithJsonObject(
   return buildResult(parsed, "json_object", response, scope);
 }
 
-// ── Helpers ──────────────────────────────────────────
+// Helpers
 
 function parseAndValidate(content: string, scope: OpenAPIScope, extractedPath: string | null = null): unknown {
   let parsed: unknown;
@@ -296,7 +296,7 @@ function isSchemaUnsupportedError(err: unknown): boolean {
   return msg.includes("response_format") || msg.includes("json_schema") || msg.includes("schema") || msg.includes("unsupported");
 }
 
-// ── Path extraction & post-processing ──────────────
+// Path extraction & post-processing
 
 /**
  * Extract a URL path from a natural-language description.
@@ -304,7 +304,7 @@ function isSchemaUnsupportedError(err: unknown): boolean {
  *   - "/api/v1/auth/login"
  *   - "/users/{id}"
  *   - "/login"
- *   - "路径为 /api/v1/auth/login"
+ *   - "path is /api/v1/auth/login"
  *   - "path is /users"
  */
 function extractPathFromDescription(description: string): string | null {
@@ -371,14 +371,14 @@ function fixPathIfNeeded(
 function inferPathFromSummary(summary: string): string {
   const s = summary.toLowerCase();
   // Check for "by id" / "detail" patterns → use path param
-  if (s.includes("by id") || s.includes("detail") || s.includes("详情") || s.includes("查询")) {
+  if (s.includes("by id") || s.includes("detail")) {
     return "/resource/{id}";
   }
-  // Generic fallback: use pluralized form
-  if (s.includes("user") || s.includes("用户")) return "/users";
-  if (s.includes("login") || s.includes("登录") || s.includes("auth")) return "/auth/login";
-  if (s.includes("order") || s.includes("订单")) return "/orders";
-  if (s.includes("product") || s.includes("商品")) return "/products";
+  // Generic fallback: use pluralized form based on English keywords.
+  if (s.includes("user")) return "/users";
+  if (s.includes("login") || s.includes("auth")) return "/auth/login";
+  if (s.includes("order")) return "/orders";
+  if (s.includes("product")) return "/products";
   return "/resource";
 }
 

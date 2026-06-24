@@ -1,5 +1,5 @@
 // types/doc_node.ts
-// ── DocNode: top-level IR, decouples ApiSpec from rendering ──
+// DocNode: top-level IR, decouples ApiSpec from rendering
 export interface DocNode {
   api: {
     title: string;
@@ -10,7 +10,7 @@ export interface DocNode {
   tags?: TagGroup[];
 }
 
-// ── Endpoint: flattened single API operation ───────
+// Endpoint: flattened single API operation
 export interface Endpoint {
   method: string;
   path: string;
@@ -22,7 +22,7 @@ export interface Endpoint {
   responses: ResponseDetail[];
 }
 
-// ── ParamDetail ────────────────────────────────────
+// ParamDetail
 export interface ParamDetail {
   name: string;
   location: string;
@@ -31,7 +31,7 @@ export interface ParamDetail {
   description?: string;
 }
 
-// ── BodyDetail ─────────────────────────────────────
+// BodyDetail
 export interface BodyDetail {
   contentType: string;
   type: string;
@@ -39,7 +39,7 @@ export interface BodyDetail {
   description?: string;
 }
 
-// ── ResponseDetail ─────────────────────────────────
+// ResponseDetail
 export interface ResponseDetail {
   status: string;
   description: string;
@@ -47,7 +47,7 @@ export interface ResponseDetail {
   type?: string;
 }
 
-// ── TagGroup ───────────────────────────────────────
+// TagGroup
 export interface TagGroup {
   name: string;
   description?: string;

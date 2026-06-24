@@ -23,7 +23,7 @@ import {
 } from "../schemas/index.ts";
 import type { ChatRequest, ChatResponse, Provider, ResponseFormat } from "../types.ts";
 
-// ── Helpers ──────────────────────────────────────────
+// Helpers
 
 /** Replace globalThis.fetch with a stub that returns a pre-canned Response. */
 function installFetch(fetchImpl: typeof fetch): () => void {
@@ -72,7 +72,7 @@ function openaiResponse(opts: {
   );
 }
 
-// ── Provider: response_format serialization ─────────
+// Provider: response_format serialization
 
 Deno.test("Provider sends response_format.json_schema when type=json_schema", async () => {
   let capturedBody: Record<string, unknown> = {};
@@ -201,7 +201,7 @@ Deno.test("Provider sets formatUsed='text' when no responseFormat was given", as
   }
 });
 
-// ── Schemas ──────────────────────────────────────────
+// Schemas
 
 Deno.test("endpointSchema is a valid JSON Schema with required method/path/summary/responses", () => {
   assertEquals(endpointSchema.type, "object");
@@ -220,7 +220,7 @@ Deno.test("schema names are exported correctly", () => {
   assertEquals(DOCUMENT_SCHEMA_NAME, "OpenAPIDocument");
 });
 
-// ── OpenAPIGenerator: happy path ─────────────────────
+// OpenAPIGenerator: happy path
 
 Deno.test("generateEndpoint returns a valid endpoint result with json_schema", async () => {
   const validEndpoint = {
@@ -279,7 +279,7 @@ Deno.test("generateDocument returns a valid document result with json_schema", a
   }
 });
 
-// ── OpenAPIGenerator: fallback ───────────────────────
+// OpenAPIGenerator: fallback
 
 Deno.test("generateEndpoint falls back to json_object when provider rejects json_schema", async () => {
   let callCount = 0;
@@ -314,7 +314,7 @@ Deno.test("generateEndpoint falls back to json_object when provider rejects json
   }
 });
 
-// ── OpenAPIGenerator: validation errors ──────────────
+// OpenAPIGenerator: validation errors
 
 Deno.test("generateEndpoint throws LLMError when AI returns invalid JSON", async () => {
   const restore = installFetch(async () => openaiResponse({ content: "not valid json {" }));
@@ -442,7 +442,7 @@ Deno.test("generateDocument output passes through backend isApiSpec validation",
   }
 });
 
-// ── ChatRequest: responseFormat acceptance ───────────
+// ChatRequest: responseFormat acceptance
 Deno.test("LLMClient.complete accepts responseFormat without error", async () => {
   const restore = installFetch(async () => openaiResponse({ content: "not json but we won't validate" }));
   try {
