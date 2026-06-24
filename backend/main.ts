@@ -1,4 +1,5 @@
 // main.ts
+import "jsr:@std/dotenv/load";
 import { resolveRoute } from "./router.ts";
 import { logRequest } from "./middleware/logger.ts";
 import { isApiPath, corsHeaders } from "./shared/utils.ts";
