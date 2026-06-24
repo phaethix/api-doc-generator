@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributing Guide
+    url: https://github.com/phaethix/api-doc-generator/blob/main/CONTRIBUTING.md
+    about: Please read the contributing guide before opening an issue.
+  - name: Roadmap
+    url: https://github.com/phaethix/api-doc-generator/blob/main/ROADMAP.md
+    about: Check the roadmap to see what's planned.
+  - name: Discussions
+    url: https://github.com/phaethix/api-doc-generator/discussions
+    about: For general questions and discussion.
