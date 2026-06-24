@@ -1,36 +1,38 @@
-# API Doc Generator — 白皮书
+# API Doc Generator — Whitepaper
 
-> 一个基于 Deno + TypeScript 的全栈 API 文档生成器
-> 目标：以项目驱动学习，系统掌握 TypeScript 核心语法、Deno 生态与 AI 应用开发
+> A full-stack API documentation generator built with Deno + TypeScript
+> Goal: project-driven learning — systematically master TypeScript, the Deno ecosystem, and AI application development
 
----
-
-## 1. 项目定位
-
-`api-doc-generator` 是一个全栈 HTTP 服务，接收 API 接口的结构化输入或自然语言描述，自动生成标准化的接口文档（Markdown / HTML / JSON），并支持通过 AI 从零生成 OpenAPI 规范。
-
-项目的双重学习目标：
-
-1. **TypeScript 工程化** — 刻意覆盖 TS 最核心的语言特性：类型系统、泛型、类型守卫、函数重载、模块化，以及与 Deno 标准库的协作方式
-2. **AI 应用开发** — 通过 LLM Client 封装、Provider 抽象、JSON Schema 结构化输出、SSE 流式响应等实战，掌握 AI 工程化的核心技术
+> 🌐 [中文版 (Chinese Version)](api-doc-generator-whitepaper.zh-CN.md)
 
 ---
 
-## 2. 技术选型
+## 1. Project Positioning
 
-| 维度 | 选择 | 原因 |
+`api-doc-generator` is a full-stack HTTP service that accepts structured API definitions or natural language descriptions, automatically generates standardized API documentation (Markdown / HTML / JSON), and supports AI-powered OpenAPI spec generation from scratch.
+
+Dual learning objectives:
+
+1. **TypeScript Engineering** — Deliberate coverage of core TS features: type system, generics, type guards, function overloads, modularization, and integration with the Deno standard library
+2. **AI Application Development** — Hands-on mastery of AI engineering through LLM Client encapsulation, Provider abstraction, JSON Schema structured output, SSE streaming, and more
+
+---
+
+## 2. Technology Choices
+
+| Dimension | Choice | Rationale |
 |---|---|---|
-| 运行时 | Deno 2.x | 原生 TS 支持，无需 webpack/tsc 配置；内置标准库 |
-| 语言 | TypeScript (strict mode) | 项目核心学习目标 |
-| HTTP 框架 | Deno 内置 `Deno.serve` | 零依赖，感受最原始的请求/响应模型 |
-| 前端 | React 18 + Tailwind CSS | Vite 构建，组件化 SPA |
-| AI/LLM | OpenAI-compatible API | Provider 抽象，支持任意兼容接口的 LLM |
-| 测试 | `deno test` | 内置断言库，无额外配置 |
-| 包管理 | `deno.json` imports | 替代 npm，用 URL/JSR 引入依赖 |
+| Runtime | Deno 2.x | Native TS support, no webpack/tsc config; built-in standard library |
+| Language | TypeScript (strict mode) | Core learning objective |
+| HTTP framework | Deno built-in `Deno.serve` | Zero dependencies; raw request/response model |
+| Frontend | React 18 + Tailwind CSS | Vite build, component-based SPA |
+| AI/LLM | OpenAI-compatible API | Provider abstraction supports any compatible LLM |
+| Testing | `deno test` | Built-in assertions, no extra configuration |
+| Package management | `deno.json` imports | Replaces npm; dependencies via URL/JSR |
 
 ---
 
-## 3. 系统架构
+## 3. System Architecture
 
 ```mermaid
 graph TD
@@ -69,7 +71,7 @@ graph TD
 
 ---
 
-## 4. 核心数据流
+## 4. Core Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -91,7 +93,7 @@ sequenceDiagram
 
 ---
 
-## 5. 目录结构
+## 5. Directory Structure
 
 ```
 api-doc-generator/
@@ -122,50 +124,50 @@ api-doc-generator/
 │       ├── integration_test.ts
 │       └── openapi_test.ts
 ├── genai/
-│   ├── client.ts              # LLMClient 封装
-│   ├── types.ts               # Provider 接口定义
-│   ├── errors.ts              # LLMError 错误分类
-│   ├── openapi.ts             # OpenAPI 生成器
-│   ├── index.ts               # 公共导出
+│   ├── client.ts              # LLMClient encapsulation
+│   ├── types.ts               # Provider interface definitions
+│   ├── errors.ts              # LLMError error classification
+│   ├── openapi.ts             # OpenAPI generator
+│   ├── index.ts               # Public exports
 │   ├── providers/
 │   │   └── chat_completions.ts # OpenAI-compatible Provider
 │   ├── schemas/
-│   │   ├── endpoint.ts        # 单端点 JSON Schema
-│   │   └── document.ts        # 完整文档 JSON Schema
+│   │   ├── endpoint.ts        # Single endpoint JSON Schema
+│   │   └── document.ts        # Full document JSON Schema
 │   └── tests/
 │       ├── client_test.ts
 │       └── openapi_test.ts
 ├── frontend/
 │   └── src/
-│       ├── components/        # React 组件
-│       ├── api/               # API 客户端
-│       └── utils/             # 工具函数
+│       ├── components/        # React components
+│       ├── api/               # API client
+│       └── utils/             # Utility functions
 └── docs/
     └── api-doc-generator-whitepaper.md
 ```
 
 ---
 
-## 6. TypeScript 核心知识点覆盖
+## 6. TypeScript Core Concepts
 
-本项目按模块刻意安排了不同的 TS 特性，确保学习路径连贯：
+This project deliberately arranges different TS features by module, ensuring a coherent learning path:
 
-### 6.1 类型系统基础（`types/api_spec.ts`）
+### 6.1 Type System Fundamentals (`types/api_spec.ts`)
 
 ```typescript
-// interface vs type alias 的选择
+// Choosing between interface vs type alias
 interface Operation {
   summary: string;
-  description?: string;          // 可选属性
+  description?: string;          // Optional property
   parameters: Parameter[];
   requestBody?: RequestBody;
-  responses: Record<string, Response>; // 索引签名
+  responses: Record<string, Response>; // Index signature
 }
 
-// 字面量联合类型
+// Literal union types
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-// 枚举（对比 union type 的适用场景）
+// Enum (vs union type — when to use each)
 enum OutputFormat {
   Markdown = "markdown",
   HTML     = "html",
@@ -173,14 +175,14 @@ enum OutputFormat {
 }
 ```
 
-**学习重点**：`interface` 与 `type` 的差异；可选 vs 必选；`Record<K,V>` 的语义。
+**Key learning**: `interface` vs `type` differences; optional vs required; `Record<K,V>` semantics.
 
 ---
 
-### 6.2 泛型（`core/parser.ts`）
+### 6.2 Generics (`core/parser.ts`)
 
 ```typescript
-// 泛型函数：解析 + 类型守卫组合
+// Generic function: parsing + type guard composition
 function parseBody<T>(raw: unknown, guard: (x: unknown) => x is T): T {
   if (!guard(raw)) {
     throw new TypeError("Request body does not match expected schema");
@@ -188,7 +190,7 @@ function parseBody<T>(raw: unknown, guard: (x: unknown) => x is T): T {
   return raw;
 }
 
-// 类型守卫（Type Guard）
+// Type Guard
 function isApiSpec(x: unknown): x is ApiSpec {
   return (
     typeof x === "object" &&
@@ -199,37 +201,34 @@ function isApiSpec(x: unknown): x is ApiSpec {
 }
 ```
 
-**学习重点**：`<T>` 语法；`is` 类型谓词；`unknown` vs `any` 的正确使用姿势。
+**Key learning**: `<T>` syntax; `is` type predicate; correct usage of `unknown` vs `any`.
 
 ---
 
-### 6.3 Utility Types（`core/generator.ts`）
+### 6.3 Utility Types (`core/generator.ts`)
 
 ```typescript
-// Partial / Required / Readonly / Pick / Omit 的实际应用
-// (在 core/generator.ts 中实际使用)
+// Practical use of Partial / Required / Readonly / Pick / Omit
 type OperationSummary = Pick<Operation, "summary" | "description">;
 type ReadonlySpec    = Readonly<ApiSpec>;
-// buildEndpoint 使用 OperationSummary 提取字段
-// generate 函数参数使用 Readonly<ApiSpec>
 
-// 条件类型
+// Conditional types
 type Flatten<T> = T extends Array<infer Item> ? Item : T;
-// Flatten<string[]>  → string
-// Flatten<number>    → number
+// Flatten<string[]> → string
+// Flatten<number>   → number
 ```
 
 ---
 
-### 6.4 函数重载（`core/renderer.ts`）
+### 6.4 Function Overloads (`core/renderer.ts`)
 
 ```typescript
-// 重载签名（改进：所有重载统一返回 string）
+// Overload signatures (improvement: all overloads return string)
 function render(nodes: DocNode[], format: "markdown"): string;
 function render(nodes: DocNode[], format: "html"):     string;
 function render(nodes: DocNode[], format: "json"):     string;
 
-// 实现签名
+// Implementation signature
 function render(nodes: DocNode[], format: OutputFormat): string {
   switch (format) {
     case "markdown": return renderMarkdown(nodes);
@@ -241,7 +240,7 @@ function render(nodes: DocNode[], format: OutputFormat): string {
 
 ---
 
-### 6.5 异步与错误处理（`handlers/generate.ts`）
+### 6.5 Async & Error Handling (`handlers/generate.ts`)
 
 ```typescript
 export async function handleGenerate(req: Request): Promise<Response> {
@@ -250,49 +249,49 @@ export async function handleGenerate(req: Request): Promise<Response> {
     return new Response(output, { status: 200, headers: { ... } });
   } catch (e) {
     if (e instanceof ParseError) {
-      return new Response(..., { status: 400 });  // 精确到字段
+      return new Response(..., { status: 400 });  // Precise error
     }
     if (e instanceof GenerateError) {
       return new Response(..., { status: e.status });
     }
     console.error("Unexpected error:", e);
-    return new Response(..., { status: 500 });     // 真·内部错误
+    return new Response(..., { status: 500 });     // True internal error
   }
 }
 ```
 
 ---
 
-## 7. AI 开发知识点覆盖
+## 7. AI Development Concepts
 
-AI 模块 (`genai/`) 是本项目的第二核心学习目标。通过构建一个完整的 LLM 接入层，掌握以下 AI 工程化技能：
+The AI module (`genai/`) is the second core learning objective. By building a complete LLM integration layer, you master the following AI engineering skills:
 
-### 7.1 Provider 抽象模式（`genai/types.ts`）
+### 7.1 Provider Abstraction Pattern (`genai/types.ts`)
 
 ```typescript
-// 面向接口编程：上层 LLMClient 只依赖 Provider 接口
+// Interface-oriented programming: LLMClient depends only on Provider interface
 export interface Provider {
   chat(req: ChatRequest): Promise<ChatResponse>;
   streamChat?(req: ChatRequest): Promise<ReadableStream<string>>;
 }
 
-// 学习重点：依赖倒置原则 (DIP)
-// LLMClient → Provider 接口 ← ChatCompletionsProvider
-// 新增 LLM 后端只需实现 Provider，无需修改客户端代码
+// Dependency Inversion Principle (DIP) in action:
+// LLMClient → Provider interface ← ChatCompletionsProvider
+// Adding a new LLM backend only requires implementing Provider — no client changes
 ```
 
-**学习重点**：接口抽象、依赖倒置、可测试性设计（mock provider 即可单测）。
+**Key learning**: Interface abstraction, dependency inversion, testability (mock provider = unit test).
 
 ---
 
-### 7.2 LLMClient 封装（`genai/client.ts`）
+### 7.2 LLMClient Encapsulation (`genai/client.ts`)
 
 ```typescript
 export class LLMClient {
   constructor(private provider: Provider) {}
 
   async complete(req: ChatRequest): Promise<ChatResponse> {
-    this.validate(req);  // 请求验证，避免浪费 API 调用
+    this.validate(req);  // Request validation — avoid wasted API calls
     return await this.provider.chat(req);
   }
 
@@ -305,19 +304,19 @@ export class LLMClient {
   }
 
   private validate(req: ChatRequest): void {
-    // temperature 范围、maxTokens 合法性等校验
+    // temperature range, maxTokens validity, etc.
   }
 }
 ```
 
-**学习重点**：外观模式、输入验证、流式 vs 非流式 API 设计。
+**Key learning**: Facade pattern, input validation, streaming vs non-streaming API design.
 
 ---
 
-### 7.3 JSON Schema 结构化输出（`genai/schemas/`）
+### 7.3 JSON Schema Structured Output (`genai/schemas/`)
 
 ```typescript
-// 用 JSON Schema 约束 LLM 输出，确保生成合法的 OpenAPI 3.0 JSON
+// Constrain LLM output with JSON Schema — guarantees valid OpenAPI 3.0 JSON
 export const endpointSchema = {
   type: "object",
   properties: {
@@ -330,17 +329,17 @@ export const endpointSchema = {
   additionalProperties: false,
 };
 
-// 使用 json_schema response_format，LLM 返回的 JSON 100% 符合约束
+// With json_schema response_format, LLM output is 100% schema-compliant
 ```
 
-**学习重点**：JSON Schema 设计、`response_format` 机制、`json_schema` vs `json_object` 的选择与回退策略。
+**Key learning**: JSON Schema design, `response_format` mechanism, `json_schema` vs `json_object` selection and fallback strategies.
 
 ---
 
-### 7.4 流式输出 (SSE)（`genai/providers/chat_completions.ts`）
+### 7.4 Streaming Output (SSE) (`genai/providers/chat_completions.ts`)
 
 ```typescript
-// 解析 OpenAI-compatible 的 SSE 流
+// Parse OpenAI-compatible SSE stream
 async *parseSSEStream(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
   for await (const chunk of readLines(body)) {
     if (chunk.startsWith("data: ")) {
@@ -353,11 +352,11 @@ async *parseSSEStream(body: ReadableStream<Uint8Array>): AsyncGenerator<string> 
 }
 ```
 
-**学习重点**：AsyncGenerator、ReadableStream 处理、SSE 协议解析、流控与取消 (AbortController)。
+**Key learning**: AsyncGenerator, ReadableStream processing, SSE protocol parsing, flow control and cancellation (AbortController).
 
 ---
 
-### 7.5 错误分类与重试策略（`genai/errors.ts`）
+### 7.5 Error Classification & Recovery (`genai/errors.ts`)
 
 ```typescript
 export class LLMError extends Error {
@@ -372,7 +371,7 @@ export class LLMError extends Error {
   }
 }
 
-// 根据 HTTP 状态码自动分类
+// Auto-classify by HTTP status code
 function classifyStatus(status: number): LLMError["category"] {
   if (status === 401 || status === 403) return "auth";
   if (status === 429) return "rate_limit";
@@ -381,43 +380,43 @@ function classifyStatus(status: number): LLMError["category"] {
 }
 ```
 
-**学习重点**：自定义 Error 类型、错误分类模式、优雅降级与用户提示。
+**Key learning**: Custom Error types, error classification patterns, graceful degradation and user messaging.
 
 ---
 
-### 7.6 后处理与自动修复（`genai/openapi.ts`）
+### 7.6 Post-processing & Auto-fix (`genai/openapi.ts`)
 
 ```typescript
-// AI 输出不总是完美的 —— 对已知常见问题进行自动修复
+// AI output isn't always perfect — auto-fix known common issues
 function validateAndFixPath(parsed: Record<string, unknown>): void {
   const path = parsed.path as string;
-  // 修复：空路径 → 从 description 推断
+  // Fix: empty path → infer from description
   if (!path || path === "/") {
     const inferred = inferPathFromDescription(description);
     parsed.path = inferred;
   }
-  // 修复：缺少前导 /
+  // Fix: missing leading /
   if (!path.startsWith("/")) {
     parsed.path = "/" + path;
   }
 }
 ```
 
-**学习重点**：防御性编程、AI 输出的不确定性处理、自动修复 vs 报错的权衡。
+**Key learning**: Defensive programming, handling AI output uncertainty, auto-fix vs error trade-offs.
 
 ---
 
-### 7.7 Fallback 机制
+### 7.7 Fallback Mechanism
 
 ```
-json_schema → (400 不支持) → json_object → (400 不支持) → text
+json_schema → (400 unsupported) → json_object → (400 unsupported) → text
 ```
 
-当 LLM 不支持严格的结构化输出时，自动降级到宽松模式，并在响应中标注实际使用的 `format_used`。这是 AI 工程中的"优雅降级"实践。
+When the LLM doesn't support strict structured output, auto-degrade to a looser mode, and annotate the response with the actual `format_used`. This is the "graceful degradation" practice in AI engineering.
 
 ---
 
-## 8. 模块关系图
+## 8. Module Relationship Diagram
 
 ```mermaid
 graph LR
@@ -441,39 +440,39 @@ graph LR
 
 ---
 
-## 9. 学习里程碑
+## 9. Learning Milestones
 
 ```mermaid
 gantt
-    title API Doc Generator 学习进度
+    title API Doc Generator — Learning Progress
     dateFormat  YYYY-MM-DD
-    section Phase 1 基础搭建
+    section Phase 1 Foundation
     Deno init + main.ts HTTP server   :p1a, 2026-06-22, 2d
-    types/ 定义 interface & union     :p1b, after p1a, 2d
-    section Phase 2 核心逻辑
-    parser.ts 泛型 + 类型守卫         :p2a, after p1b, 3d
+    types/ interface & union          :p1b, after p1a, 2d
+    section Phase 2 Core Logic
+    parser.ts generics + type guards  :p2a, after p1b, 3d
     generator.ts Utility Types        :p2b, after p2a, 3d
-    renderer.ts 函数重载              :p2c, after p2b, 2d
-    section Phase 3 工程化
-    deno test 单元测试                :p3a, after p2c, 2d
-    错误处理 + 响应格式规范            :p3b, after p3a, 2d
-    section Phase 4 扩展
-    支持 OpenAPI 3.x 输入格式         :p4a, after p3b, 3d
-    HTML 渲染 + CSS 美化              :p4b, after p4a, 2d
-    section Phase 5 AI 集成
-    LLMClient + Provider 抽象         :p5a, after p4b, 3d
-    JSON Schema 结构化输出            :p5b, after p5a, 2d
-    SSE 流式生成                      :p5c, after p5b, 2d
-    前端 AI 交互界面                  :p5d, after p5c, 3d
+    renderer.ts function overloads    :p2c, after p2b, 2d
+    section Phase 3 Engineering
+    deno test unit tests              :p3a, after p2c, 2d
+    Error handling + response format  :p3b, after p3a, 2d
+    section Phase 4 Extensions
+    OpenAPI 3.x input support         :p4a, after p3b, 3d
+    HTML rendering + CSS styling      :p4b, after p4a, 2d
+    section Phase 5 AI Integration
+    LLMClient + Provider abstraction  :p5a, after p4b, 3d
+    JSON Schema structured output     :p5b, after p5a, 2d
+    SSE streaming generation          :p5c, after p5b, 2d
+    Frontend AI interaction UI        :p5d, after p5c, 3d
 ```
 
 ---
 
-## 10. API 接口规范
+## 10. API Specification
 
 ### `POST /generate`
 
-**请求体**（JSON）：
+**Request Body** (JSON):
 
 ```json
 {
@@ -494,19 +493,19 @@ gantt
 }
 ```
 
-**Query 参数**：
+**Query Parameters**:
 
-| 参数 | 类型 | 默认 | 说明 |
+| Parameter | Type | Default | Description |
 |---|---|---|---|
-| `format` | `markdown \| html \| json` | `markdown` | 输出格式 |
+| `format` | `markdown \| html \| json` | `markdown` | Output format |
 
-**请求头**：
+**Request Headers**:
 
-| 头 | 说明 |
+| Header | Description |
 |---|---|
-| `Accept` | Content Negotiation: `text/markdown`、`text/html`、`application/json`（优先级高于 query param） |
+| `Accept` | Content Negotiation: `text/markdown`, `text/html`, `application/json` (takes priority over query param) |
 
-**响应**：生成的文档字符串。
+**Response**: Generated documentation string.
 
 ---
 
@@ -520,7 +519,7 @@ gantt
 
 ### `POST /ai/ping`
 
-测试 LLM 连接：
+Test LLM connection:
 
 ```json
 // Response
@@ -531,11 +530,11 @@ gantt
 
 ### `POST /ai/generate-openapi`
 
-从自然语言生成 OpenAPI 规范（非流式）：
+Generate OpenAPI spec from natural language (non-streaming):
 
 ```json
 // Request
-{ "description": "用户管理系统，支持 CRUD 操作", "scope": "document" }
+{ "description": "User management system with CRUD operations", "scope": "document" }
 
 // Response
 { "ok": true, "openapi": {...}, "scope": "document", "usage": {...}, "format_used": "json_schema" }
@@ -545,7 +544,7 @@ gantt
 
 ### `POST /ai/generate-openapi-stream`
 
-流式生成（SSE），实时返回生成进度：
+Streaming generation (SSE) with real-time progress:
 
 ```
 event: delta
@@ -557,27 +556,23 @@ data: {"type":"done","result":{"openapi":{...},"format_used":"json_schema"}}
 
 ---
 
-## 11. 运行方式
+## 11. How to Run
 
 ```bash
-# 初始化（已完成）
-deno init api-doc-generator
-cd api-doc-generator
-
-# 开发（热重载）
+# Development (hot reload)
 deno task dev
 
-# 生产运行
+# Production
 deno task start
-# 或
+# or
 deno run --allow-net main.ts
 
-# 运行测试
+# Run tests
 deno task test
-# 或
+# or
 deno test
 
-# 调用示例
+# Example API call
 curl -X POST http://localhost:8080/generate?format=markdown \
   -H "Content-Type: application/json" \
   -d '{"info":{"title":"Demo","version":"1.0"},"paths":{"/ping":{"get":{"summary":"Ping","responses":{"200":{"description":"pong"}}}}}}'
@@ -585,46 +580,46 @@ curl -X POST http://localhost:8080/generate?format=markdown \
 
 ---
 
-## 12. 学习路线对照
+## 12. Learning Path Reference
 
-| 阶段 | 文件 | 核心概念 |
+| Stage | File | Core Concepts |
 |---|---|---|
-| 1 | `types/api_spec.ts` | `interface`、`type`、字面量联合、`Record` |
-| 2 | `core/parser.ts` | 泛型 `<T>`、类型守卫 `is`、`unknown` |
-| 3 | `core/generator.ts` | `Utility Types`、条件类型 `infer` |
-| 4 | `core/renderer.ts` | 函数重载、`switch` 类型收窄 |
-| 5 | `handlers/generate.ts` | `async/await`、`Promise<Response>`、错误分类处理 |
-| 6 | `router.ts` | `URLPattern` Web Standard 路由 |
-| 7 | `middleware/logger.ts` | 请求日志、耗时记录、中间件模式 |
-| 8 | `adapters/openapi.ts` | 适配器模式、OpenAPI → ApiSpec 转换 |
-| 9 | `tests/*_test.ts` | `Deno.test`、`assertEquals`、集成测试 |
-| 10 | `genai/types.ts` | 接口抽象、依赖倒置、Provider 模式 |
-| 11 | `genai/client.ts` | 外观模式、输入验证、流式/非流式双模式 |
-| 12 | `genai/providers/` | OpenAI API 协议、SSE 解析、错误分类 |
-| 13 | `genai/schemas/` | JSON Schema 设计、结构化输出约束 |
-| 14 | `genai/openapi.ts` | AI 输出后处理、自动修复、Fallback 策略 |
+| 1 | `types/api_spec.ts` | `interface`, `type`, literal unions, `Record` |
+| 2 | `core/parser.ts` | Generics `<T>`, type guards `is`, `unknown` |
+| 3 | `core/generator.ts` | Utility Types, conditional types `infer` |
+| 4 | `core/renderer.ts` | Function overloads, `switch` type narrowing |
+| 5 | `handlers/generate.ts` | `async/await`, `Promise<Response>`, error classification |
+| 6 | `router.ts` | `URLPattern` Web Standard routing |
+| 7 | `middleware/logger.ts` | Request logging, duration tracking, middleware pattern |
+| 8 | `adapters/openapi.ts` | Adapter pattern, OpenAPI → ApiSpec conversion |
+| 9 | `tests/*_test.ts` | `Deno.test`, `assertEquals`, integration testing |
+| 10 | `genai/types.ts` | Interface abstraction, dependency inversion, Provider pattern |
+| 11 | `genai/client.ts` | Facade pattern, input validation, streaming/non-streaming dual mode |
+| 12 | `genai/providers/` | OpenAI API protocol, SSE parsing, error classification |
+| 13 | `genai/schemas/` | JSON Schema design, structured output constraints |
+| 14 | `genai/openapi.ts` | AI output post-processing, auto-fix, fallback strategies |
 
 ---
 
-## 13. 设计改进
+## 13. Design Improvements
 
-以下改进在实现过程中识别并应用，使项目在保留学习目标的同时更接近生产标准：
+The following improvements were identified and applied during implementation, bringing the project closer to production standards while preserving learning objectives:
 
-| # | 改进 | 说明 |
-|---|------|------|
-| 1 | 错误分类处理 | ParseError(400)、GenerateError(自定义)、未知错误(500+log) |
-| 2 | 多层级类型校验 | isApiInfo → isPathItem → isOperation 递归校验 |
-| 3 | Renderer 统一返回 string | 去掉 JSON 返回 object 的不一致 |
-| 4 | Content Negotiation | Accept header 回退 + query param |
-| 5 | 请求日志中间件 | 记录耗时、method、path、status |
-| 6 | URLPattern 路由 | Web Standard，method + path 精确匹配 |
-| 7 | OpenAPI 适配器独立 | adapters/ 目录，适配器模式，不侵入核心 |
-| 8 | 递归 Schema 转换 | 支持嵌套 object 和 array 类型 |
-| 9 | HTML 内联 CSS 美化 | Phase 4 目标直接在核心渲染器中实现 |
-| 10 | Utility Types 实际使用 | Pick/Readonly 用于实际业务逻辑 |
-| 11 | 新增 middleware/ 层 | 日志、错误处理与业务逻辑解耦 |
-| 12 | 函数重载统一返回类型 | render() 所有重载返回 string |
+| # | Improvement | Description |
+|---|-------------|-------------|
+| 1 | Error classification | ParseError(400), GenerateError(custom), unknown(500+log) |
+| 2 | Multi-level type validation | isApiInfo → isPathItem → isOperation recursive validation |
+| 3 | Renderer unified return type | Removed inconsistency of JSON returning object |
+| 4 | Content Negotiation | Accept header fallback + query param |
+| 5 | Request logging middleware | Records duration, method, path, status |
+| 6 | URLPattern routing | Web Standard, exact method + path matching |
+| 7 | Independent OpenAPI adapter | adapters/ directory, adapter pattern, non-invasive |
+| 8 | Recursive Schema conversion | Supports nested object and array types |
+| 9 | HTML inline CSS styling | Phase 4 goal implemented directly in core renderer |
+| 10 | Utility Types in practice | Pick/Readonly used for actual business logic |
+| 11 | New middleware/ layer | Decouples logging, error handling from business logic |
+| 12 | Function overloads unified return | render() — all overloads return string |
 
 ---
 
-> **一句话总结**：这个项目的价值不在文档生成本身，而在于：后端每一层模块都是 TypeScript 特性的刻意练习题；AI 模块则是 LLM 工程化的完整实战 —— Provider 抽象、结构化输出、流式响应、错误恢复、Fallback 策略。读完代码，TS 类型系统和 AI 应用开发的核心就基本通了。
+> **TL;DR**: This project's value isn't the documentation generation itself — it's that every backend module is a deliberate TypeScript exercise, and the AI module is a complete LLM engineering practice: Provider abstraction, structured output, streaming responses, error recovery, and fallback strategies. Read the code, and you'll grasp both the TS type system and AI application development fundamentals.
