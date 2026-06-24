@@ -7,6 +7,11 @@ interface OutputPanelProps {
   format: OutputFormat;
   loading: boolean;
   error: string | null;
+  streaming?: boolean;
+  elapsedSeconds?: number;
+  charCount?: number;
+  streamingProgress?: string;
+  onCancel?: () => void;
   onCopy: () => void;
   onDownload: () => void;
 }
@@ -16,6 +21,11 @@ export function OutputPanel({
   format,
   loading,
   error,
+  streaming = false,
+  elapsedSeconds = 0,
+  charCount = 0,
+  streamingProgress = "",
+  onCancel,
   onCopy,
   onDownload,
 }: OutputPanelProps) {
@@ -122,7 +132,14 @@ export function OutputPanel({
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
         <div className="w-10 h-10 border-3 border-primary-200 dark:border-primary-800 border-t-primary-600 rounded-full animate-spin mb-4" />
-        <p className="text-sm">正在生成文档...</p>
+        <p className="text-sm">
+          {streamingProgress || "正在生成文档..."}
+        </p>
+        {streaming && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            已生成 {charCount} 字符 · 用时 {elapsedSeconds}s
+          </p>
+        )}
       </div>
     );
   }
@@ -168,11 +185,27 @@ export function OutputPanel({
           <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
             预览
             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">HTML</span>
+            {elapsedSeconds > 0 && (
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                {charCount} 字符 · 用时 {elapsedSeconds}s
+              </span>
+            )}
           </span>
           <div className="flex gap-2">
+            {onCancel && streaming && (
+              <button
+                onClick={onCancel}
+                className="btn-ghost text-xs text-red-500"
+                title="取消生成"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                取消
+              </button>
+            )}
             <button
               onClick={() => {
-                // 在浏览器中打开新窗口
                 const newWindow = window.open();
                 if (newWindow) {
                   newWindow.document.write(content);
@@ -184,40 +217,19 @@ export function OutputPanel({
               title="在新窗口中打开"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
               打开
             </button>
-            <button
-              onClick={onCopy}
-              className="btn-ghost text-xs"
-            >
+            <button onClick={onCopy} className="btn-ghost text-xs">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
               复制
             </button>
-            <button
-              onClick={onDownload}
-              className="btn-ghost text-xs"
-            >
+            <button onClick={onDownload} className="btn-ghost text-xs">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               下载
             </button>
@@ -242,8 +254,25 @@ export function OutputPanel({
           <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
             {format === "markdown" ? "Markdown → HTML" : "JSON"}
           </span>
+          {elapsedSeconds > 0 && (
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+              {charCount} 字符 · 用时 {elapsedSeconds}s
+            </span>
+          )}
         </span>
         <div className="flex gap-2">
+          {onCancel && streaming && (
+            <button
+              onClick={onCancel}
+              className="btn-ghost text-xs text-red-500"
+              title="取消生成"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              取消
+            </button>
+          )}
           <button
             onClick={onCopy}
             className="btn-ghost text-xs"

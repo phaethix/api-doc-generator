@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "./components/Header";
 import { JsonEditor } from "./components/JsonEditor";
 import { OutputPanel } from "./components/OutputPanel";
@@ -20,6 +20,43 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // Streaming UX state
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [streamingProgress, setStreamingProgress] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const startTimer = () => {
+    setElapsedSeconds(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const cancelGeneration = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    stopTimer();
+    setIsLoading(false);
+    showToast("info", "Generation cancelled");
+  };
 
   // 同步主题到 document.documentElement
   useEffect(() => {
@@ -58,10 +95,10 @@ export default function App() {
 
   const handleGenerate = useCallback(async () => {
     if (inputMode === "ai") {
-      // AI 生成模式 - 使用流式接口
+      // AI generation mode - using streaming API
       if (!inputValue.trim()) {
-        setInputError("请输入接口描述");
-        showToast("error", "请输入接口描述");
+        setInputError("Please enter API description");
+        showToast("error", "Please enter API description");
         return;
       }
 
@@ -69,6 +106,15 @@ export default function App() {
       setError(null);
       setIsLoading(true);
       setOutputContent(""); // 清空之前的输出
+      setElapsedSeconds(0);
+      setCharCount(0);
+      setStreamingProgress("Connecting to AI service...");
+
+      // 创建 AbortController 用于取消
+      const abortController = new AbortController();
+      abortRef.current = abortController;
+
+      startTimer();
 
       try {
         let finalResult: { openapi: unknown; format_used: string } | null = null;
@@ -82,6 +128,8 @@ export default function App() {
               // 实时更新输出内容
               const content = event.content as string;
               setOutputContent((prev) => prev + content);
+              setCharCount((prev) => prev + (content?.length ?? 0));
+              setStreamingProgress("Generating OpenAPI specification...");
             } else if (event.type === "done") {
               // 接收完整结果
               const result = event.result as {
@@ -92,12 +140,14 @@ export default function App() {
                 openapi: result.openapi,
                 format_used: result.format_used,
               };
+              setStreamingProgress("Generation complete, formatting...");
             } else if (event.type === "error") {
               // 捕获错误但不抛出，避免被 client.ts 的 catch 屏蔽
               const message = event.message as string;
               streamError = new Error(message);
             }
           },
+          abortController.signal,
         );
 
         // 检查流处理过程中是否发生错误
@@ -110,21 +160,31 @@ export default function App() {
           const result = finalResult as { openapi: unknown; format_used: string };
           const openapiJson = JSON.stringify(result.openapi, null, 2);
           setOutputContent(openapiJson);
-          showToast("success", `AI 生成成功！使用格式：${result.format_used}`);
+          setCharCount(openapiJson.length);
+          setStreamingProgress("");
+          showToast("success", `AI generation successful! Format used: ${result.format_used}`);
         }
       } catch (e) {
-        const errMsg = e instanceof Error ? e.message : "AI 生成失败";
-        setError(errMsg);
-        showToast("error", errMsg);
+        const errMsg = e instanceof Error ? e.message : "AI generation failed";
+        // 保留已生成的内容，不清除 outputContent
+        if (e instanceof Error && e.message.includes("cancelled")) {
+          setStreamingProgress("");
+          // 取消时不显示错误，已生成的内容保留
+        } else {
+          setError(errMsg);
+          showToast("error", errMsg);
+        }
       } finally {
+        abortRef.current = null;
+        stopTimer();
         setIsLoading(false);
       }
       return;
     }
 
     if (!inputValue.trim()) {
-      setInputError("请输入 API 规范");
-      showToast("error", "请输入 API 规范");
+      setInputError("Please enter API specification");
+      showToast("error", "Please enter API specification");
       return;
     }
 
@@ -137,8 +197,8 @@ export default function App() {
       try {
         parseResult = JSON.parse(inputValue);
       } catch {
-        setInputError("JSON 格式无效，请检查输入");
-        showToast("error", "JSON 格式无效");
+        setInputError("Invalid JSON format, please check input");
+        showToast("error", "Invalid JSON format");
         setIsLoading(false);
         return;
       }
@@ -148,9 +208,9 @@ export default function App() {
         : await generateDoc(parseResult, outputFormat);
 
       setOutputContent(content);
-      showToast("success", "文档生成成功！");
+      showToast("success", "Document generated successfully!");
     } catch (e) {
-      const errMsg = e instanceof Error ? e.message : "生成失败";
+      const errMsg = e instanceof Error ? e.message : "Generation failed";
       setError(errMsg);
       showToast("error", errMsg);
     } finally {
@@ -162,9 +222,9 @@ export default function App() {
     if (!outputContent) return;
     try {
       await navigator.clipboard.writeText(outputContent);
-      showToast("success", "已复制到剪贴板");
+      showToast("success", "Copied to clipboard");
     } catch {
-      showToast("error", "复制失败");
+      showToast("error", "Copy failed");
     }
   }, [outputContent]);
 
@@ -230,7 +290,7 @@ export default function App() {
                 : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
-            自定义 API 规范
+            Custom API Spec
           </button>
           <button
             type="button"
@@ -241,7 +301,7 @@ export default function App() {
                 : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
             }`}
           >
-            OpenAPI 导入
+                    OpenAPI Import
           </button>
           <button
             type="button"
@@ -255,7 +315,7 @@ export default function App() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            AI 生成
+            AI Generate
           </button>
         </div>
 
@@ -266,10 +326,10 @@ export default function App() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                    AI 生成接口
+                    AI Generate Endpoint
                   </h2>
                   <span className="text-xs text-purple-500 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
-                    自然语言描述
+                    Natural Language Description
                   </span>
                 </div>
 
@@ -277,7 +337,7 @@ export default function App() {
                   <textarea
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder={"用自然语言描述你想要生成的 API 接口，例如：\n用户登录接口，接收手机号和验证码，返回 JWT token\n\n或者更详细的描述：\n一个待办事项服务，支持创建、查询、更新、删除待办事项"}
+                    placeholder={"Describe the API endpoint you want to generate in natural language, e.g.:\nUser login endpoint, accepts phone number and verification code, returns JWT token\n\nOr more detailed:\nA todo service with create, query, update, delete operations"}
                     className="w-full h-[400px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                   />
                   {inputError && (
@@ -289,10 +349,10 @@ export default function App() {
               <>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                    {inputMode === "spec" ? "API 规范输入" : "OpenAPI 规范导入"}
+                    {inputMode === "spec" ? "API Spec Input" : "OpenAPI Import"}
                   </h2>
                   <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">
-                    JSON 格式
+                    JSON Format
                   </span>
                 </div>
 
@@ -305,7 +365,7 @@ export default function App() {
                     placeholder={
                       inputMode === "spec"
                         ? '例如：{\n  "info": { "title": "My API", "version": "1.0" },\n  "paths": {...}\n}'
-                        : '粘贴 OpenAPI 3.0 规范，例如：\n{\n  "openapi": "3.0.0",\n  "info": {...},\n  "paths": {...}\n}'
+                        : 'Paste OpenAPI 3.0 spec, e.g.:\n{\n  "openapi": "3.0.0",\n  "info": {...},\n  "paths": {...}\n}'
                     }
                     height="400px"
                   />
@@ -315,29 +375,38 @@ export default function App() {
 
             <div className="mt-4 space-y-3">
               {inputMode === "ai" ? (
-                <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={isLoading || !inputValue.trim()}
-                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      AI 生成中...
-                    </>
-                  ) : (
-                    <>
+                isLoading ? (
+                  // Generating: show progress and cancel button
+                  <div className="space-y-3">
+                    {streamingProgress && (
+                      <p className="text-sm text-purple-600 dark:text-purple-400 text-center">
+                        {streamingProgress}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={cancelGeneration}
+                      className="w-full bg-red-500 hover:bg-red-600 text-white py-3 text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      AI 生成接口
-                    </>
-                  )}
-                </button>
+                      Cancel Generation
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={!inputValue.trim()}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 text-base font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    AI Generate Endpoint
+                  </button>
+                )
               ) : (
                 <FormatSelector value={outputFormat} onChange={setOutputFormat} />
               )}
@@ -381,6 +450,11 @@ export default function App() {
                 format={inputMode === "ai" ? "json" : outputFormat}
                 loading={isLoading && !outputContent}
                 error={error}
+                streaming={isLoading}
+                elapsedSeconds={elapsedSeconds}
+                charCount={charCount}
+                streamingProgress={streamingProgress}
+                onCancel={cancelGeneration}
                 onCopy={handleCopy}
                 onDownload={handleDownload}
               />
