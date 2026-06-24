@@ -347,17 +347,20 @@ Deno.test("generateEndpoint throws LLMError when endpoint is missing required fi
   }
 });
 
-Deno.test("generateEndpoint throws LLMError when path doesn't start with /", async () => {
+Deno.test("generateEndpoint auto-fixes invalid path instead of throwing", async () => {
+  // AI returned a path with no leading slash — should be auto-fixed to a valid path.
   const badEndpoint = { method: "GET", path: "no-leading-slash", summary: "bad" };
   const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(badEndpoint) }));
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
-    await assertRejects(
-      () => generateOpenAPIEndpoint(client, "test"),
-      LLMError,
-      "path",
-    );
+    const result = await generateOpenAPIEndpoint(client, "test");
+    const openapi = result.openapi as Record<string, unknown>;
+    assertEquals(openapi.method, "GET");
+    // Path should be auto-fixed to something starting with '/'
+    const fixedPath = openapi.path as string;
+    assertStringIncludes(fixedPath, "/");
+    assertEquals(fixedPath.length >= 2, true);
   } finally {
     restore();
   }

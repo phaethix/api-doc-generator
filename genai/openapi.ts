@@ -331,17 +331,55 @@ function fixPathIfNeeded(
   extractedPath: string | null,
   scope: OpenAPIScope,
 ): unknown {
-  if (scope !== "endpoint" || !extractedPath) return parsed;
+  if (scope !== "endpoint") return parsed;
 
   const obj = parsed as Record<string, unknown>;
   const currentPath = typeof obj.path === "string" ? obj.path : "";
 
   // If the AI's path is invalid (too short, just "/", or missing), use the extracted one.
   if (currentPath.length < 2 || currentPath === "/" || !currentPath.startsWith("/")) {
-    obj.path = extractedPath;
+    if (extractedPath) {
+      obj.path = extractedPath;
+    } else {
+      // Fallback: infer a path from the summary or use a generic one.
+      const summary = typeof obj.summary === "string" ? obj.summary : "";
+      obj.path = inferPathFromSummary(summary);
+    }
+  }
+
+  // If responses is empty, add a default 200 success response.
+  if (!obj.responses || typeof obj.responses !== "object" || Object.keys(obj.responses as object).length === 0) {
+    obj.responses = {
+      "200": {
+        description: "Successful operation",
+        content: {
+          "application/json": {
+            schema: { type: "object" },
+          },
+        },
+      },
+    };
   }
 
   return obj;
+}
+
+/**
+ * Infer a RESTful path from a summary string when no path is explicitly given.
+ * Example: "Create user" → "/users", "Get user by id" → "/users/{id}"
+ */
+function inferPathFromSummary(summary: string): string {
+  const s = summary.toLowerCase();
+  // Check for "by id" / "detail" patterns → use path param
+  if (s.includes("by id") || s.includes("detail") || s.includes("详情") || s.includes("查询")) {
+    return "/resource/{id}";
+  }
+  // Generic fallback: use pluralized form
+  if (s.includes("user") || s.includes("用户")) return "/users";
+  if (s.includes("login") || s.includes("登录") || s.includes("auth")) return "/auth/login";
+  if (s.includes("order") || s.includes("订单")) return "/orders";
+  if (s.includes("product") || s.includes("商品")) return "/products";
+  return "/resource";
 }
 
 // Re-export the schema names for convenience, so callers don't need to
