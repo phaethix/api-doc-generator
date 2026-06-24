@@ -35,6 +35,14 @@ export default function App() {
     };
   }, []);
 
+  // Clear input when leaving AI tab
+  useEffect(() => {
+    if (inputMode !== "ai") {
+      setInputValue("");
+      setInputError(null);
+    }
+  }, [inputMode]);
+
   const startTimer = () => {
     setElapsedSeconds(0);
     if (timerRef.current) clearInterval(timerRef.current);
