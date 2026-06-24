@@ -1,17 +1,24 @@
-// Unified type definitions for the genai module.
-// These types abstract over concrete LLM providers (OpenAI, Anthropic, etc.)
-// so the rest of the codebase only depends on this interface.
+// genai/types.ts — Unified type definitions for the genai module.
+// These types abstract over concrete LLM providers so the rest of the
+// codebase only depends on this interface, not any specific backend.
+
+// ── Chat message ────────────────────────────────────
+export type ChatRole = "system" | "user" | "assistant";
 
 export interface ChatMessage {
-  role: "system" | "user" | "assistant";
+  role: ChatRole;
   content: string;
 }
 
+// ── Request / Response ──────────────────────────────
 export interface ChatRequest {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
-  stream?: boolean; // Reserved for phase 3 (Streaming)
+  /** Request timeout in milliseconds. Default: 30_000 (set by provider). */
+  timeoutMs?: number;
+  /** Reserved — phase 3 will enable streaming replies. */
+  stream?: boolean;
 }
 
 export interface Usage {
@@ -25,8 +32,9 @@ export interface ChatResponse {
   model: string;
 }
 
-// Provider interface — each LLM backend (OpenAI, Anthropic, Google, Ollama)
-// implements this interface. The LLMClient only depends on this abstraction.
+// ── Provider interface ──────────────────────────────
+// Each LLM backend (Agnes, OpenAI, DeepSeek, Ollama, …) implements this.
+// The LLMClient only depends on this abstraction.
 export interface Provider {
   chat(req: ChatRequest): Promise<ChatResponse>;
 }
