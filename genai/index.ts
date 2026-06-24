@@ -6,36 +6,36 @@
 
 import { LLMClient } from "./client.ts";
 import { ChatCompletionsProvider } from "./providers/chat_completions.ts";
-import { LLMError, LLMConfigError } from "./errors.ts";
+import { LLMConfigError, LLMError } from "./errors.ts";
 import type { LLMErrorCategory } from "./errors.ts";
 import type { ChatCompletionsOptions } from "./providers/chat_completions.ts";
 import type {
-  ChatRole,
   ChatMessage,
   ChatRequest,
   ChatResponse,
-  Usage,
+  ChatRole,
+  GenerateOpenAPIResult,
+  OpenAPIScope,
   Provider,
   ResponseFormat,
-  OpenAPIScope,
-  GenerateOpenAPIResult,
+  Usage,
 } from "./types.ts";
 
 // Errors
-export { LLMError, LLMConfigError };
+export { LLMConfigError, LLMError };
 export type { LLMErrorCategory };
 
 // Types
 export type {
-  ChatRole,
   ChatMessage,
   ChatRequest,
   ChatResponse,
-  Usage,
+  ChatRole,
+  GenerateOpenAPIResult,
+  OpenAPIScope,
   Provider,
   ResponseFormat,
-  OpenAPIScope,
-  GenerateOpenAPIResult,
+  Usage,
 };
 
 // Client
@@ -47,17 +47,20 @@ export type { ChatCompletionsOptions };
 
 // Phase 2: Structured output (OpenAPI generation)
 export {
-  generateOpenAPIEndpoint,
-  generateOpenAPIDocument,
-  generateOpenAPIEndpointStream,
-  generateOpenAPIDocumentStream,
-  type OpenAPIStreamEvent,
-  ENDPOINT_SCHEMA_NAME,
   DOCUMENT_SCHEMA_NAME,
-  endpointSchema,
   documentSchema,
+  ENDPOINT_SCHEMA_NAME,
+  endpointSchema,
+  generateOpenAPIDocument,
+  generateOpenAPIDocumentStream,
+  generateOpenAPIEndpoint,
+  generateOpenAPIEndpointStream,
+  type OpenAPIStreamEvent,
 } from "./openapi.ts";
-export { endpointSchema as endpointJSONSchema, documentSchema as documentJSONSchema } from "./schemas/index.ts";
+export {
+  documentSchema as documentJSONSchema,
+  endpointSchema as endpointJSONSchema,
+} from "./schemas/index.ts";
 
 // Factory
 export interface LLMClientConfig {
@@ -102,10 +105,13 @@ export function createLLMClient(config?: Partial<LLMClientConfig>): LLMClient {
     );
   }
 
-  const baseUrl = config?.baseUrl ?? Deno.env.get("OPENAI_BASE_URL") ?? DEFAULT_BASE_URL;
+  const baseUrl = config?.baseUrl ?? Deno.env.get("OPENAI_BASE_URL") ??
+    DEFAULT_BASE_URL;
   const model = config?.model ?? Deno.env.get("LLM_MODEL") ?? DEFAULT_MODEL;
   const timeoutMs = config?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const provider = new ChatCompletionsProvider(apiKey, baseUrl, model, { timeoutMs });
+  const provider = new ChatCompletionsProvider(apiKey, baseUrl, model, {
+    timeoutMs,
+  });
   return new LLMClient(provider);
 }

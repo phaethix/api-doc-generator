@@ -4,10 +4,13 @@
 // no tokens burned) to verify the client's forwarding logic, validation,
 // error categorization, and timeout behavior.
 
-import { LLMClient, createLLMClient, LLMError, LLMConfigError } from "../index.ts";
 import {
-  ChatCompletionsProvider,
-} from "../providers/chat_completions.ts";
+  createLLMClient,
+  LLMClient,
+  LLMConfigError,
+  LLMError,
+} from "../index.ts";
+import { ChatCompletionsProvider } from "../providers/chat_completions.ts";
 import type { ChatRequest, ChatResponse, Provider } from "../types.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
@@ -18,7 +21,7 @@ class MockProvider implements Provider {
     private model = "mock-model",
   ) {}
 
-  async chat(req: ChatRequest): Promise<ChatResponse> {
+  async chat(_req: ChatRequest): Promise<ChatResponse> {
     return {
       content: this.response,
       usage: { promptTokens: 10, completionTokens: 5 },
@@ -44,7 +47,10 @@ function createCapture() {
 
 // Fetch shim helper
 // Temporarily replace globalThis.fetch to return canned responses.
-function withMockFetch<T>(mock: () => Response | Promise<Response>, fn: () => Promise<T>): Promise<T> {
+function withMockFetch<T>(
+  mock: () => Response | Promise<Response>,
+  fn: () => Promise<T>,
+): Promise<T> {
   const original = globalThis.fetch;
   globalThis.fetch = (() => mock()) as typeof fetch;
   return fn().finally(() => {
@@ -58,7 +64,11 @@ function okResponse(content = "hello", model = "test-model") {
     JSON.stringify({
       id: "chatcmpl-test",
       model,
-      choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content },
+        finish_reason: "stop",
+      }],
       usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
@@ -110,10 +120,11 @@ Deno.test("LLMClient rejects empty messages", async () => {
 Deno.test("LLMClient rejects out-of-range temperature", async () => {
   const client = new LLMClient(new MockProvider("x"));
   await assertRejects(
-    () => client.complete({
-      messages: [{ role: "user", content: "hi" }],
-      temperature: 3,
-    }),
+    () =>
+      client.complete({
+        messages: [{ role: "user", content: "hi" }],
+        temperature: 3,
+      }),
     Error,
     "temperature must be between 0 and 2",
   );
@@ -122,10 +133,11 @@ Deno.test("LLMClient rejects out-of-range temperature", async () => {
 Deno.test("LLMClient rejects non-positive maxTokens", async () => {
   const client = new LLMClient(new MockProvider("x"));
   await assertRejects(
-    () => client.complete({
-      messages: [{ role: "user", content: "hi" }],
-      maxTokens: 0,
-    }),
+    () =>
+      client.complete({
+        messages: [{ role: "user", content: "hi" }],
+        maxTokens: 0,
+      }),
     Error,
     "maxTokens must be positive",
   );
@@ -138,7 +150,9 @@ Deno.test("createLLMClient throws LLMConfigError when API key is missing", async
   Deno.env.delete("OPENAI_API_KEY");
   try {
     await assertRejects(
-      async () => { createLLMClient(); },
+      async () => {
+        createLLMClient();
+      },
       LLMConfigError,
     );
   } finally {
@@ -181,13 +195,20 @@ Deno.test("createLLMClient falls back to env when config fields are omitted", ()
 // ChatCompletionsProvider
 
 Deno.test("ChatCompletionsProvider parses a successful OpenAI-shaped response", async () => {
-  const provider = new ChatCompletionsProvider("key", "https://example.com/v1", "test-model");
-  const res = await withMockFetch(() => okResponse("pong", "test-model"), async () => {
-    return await provider.chat({
-      messages: [{ role: "user", content: "ping" }],
-      temperature: 0,
-    });
-  });
+  const provider = new ChatCompletionsProvider(
+    "key",
+    "https://example.com/v1",
+    "test-model",
+  );
+  const res = await withMockFetch(
+    () => okResponse("pong", "test-model"),
+    async () => {
+      return await provider.chat({
+        messages: [{ role: "user", content: "ping" }],
+        temperature: 0,
+      });
+    },
+  );
   assertEquals(res.content, "pong");
   assertEquals(res.model, "test-model");
   assertEquals(res.usage.promptTokens, 10);
@@ -205,7 +226,11 @@ Deno.test("ChatCompletionsProvider classifies error status codes", async () => {
   ];
 
   for (const { status, expected } of cases) {
-    const provider = new ChatCompletionsProvider("key", "https://example.com/v1", "test");
+    const provider = new ChatCompletionsProvider(
+      "key",
+      "https://example.com/v1",
+      "test",
+    );
     try {
       await withMockFetch(
         () => new Response("error", { status }),
@@ -255,14 +280,20 @@ Deno.test("ChatCompletionsProvider respects timeoutMs", async () => {
     assertEquals(err.category, "network");
     const elapsed = performance.now() - start;
     // Should abort near 100ms; allow generous tolerance for CI.
-    if (elapsed > 1000) throw new Error(`timeout took too long: ${elapsed.toFixed(0)}ms`);
+    if (elapsed > 1000) {
+      throw new Error(`timeout took too long: ${elapsed.toFixed(0)}ms`);
+    }
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
 Deno.test("ChatCompletionsProvider returns network error on fetch failure", async () => {
-  const provider = new ChatCompletionsProvider("key", "https://example.com/v1", "test");
+  const provider = new ChatCompletionsProvider(
+    "key",
+    "https://example.com/v1",
+    "test",
+  );
   let callCount = 0;
   try {
     await withMockFetch(

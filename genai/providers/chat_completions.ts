@@ -70,8 +70,8 @@ export class ChatCompletionsProvider implements Provider {
         completionTokens: data.usage?.completion_tokens ?? 0,
       };
 
-      const formatUsed: ChatResponse["formatUsed"] =
-        req.responseFormat?.type ?? "text";
+      const formatUsed: ChatResponse["formatUsed"] = req.responseFormat?.type ??
+        "text";
 
       return {
         content,
@@ -171,7 +171,11 @@ export class ChatCompletionsProvider implements Provider {
   }
 
   // Internals
-  private toLLMError(status: number, statusText: string, body?: string): LLMError {
+  private toLLMError(
+    status: number,
+    statusText: string,
+    body?: string,
+  ): LLMError {
     const category = categorizeStatus(status);
     const message = formatErrorMessage(category, status, statusText, body);
     return new LLMError(message, category, status, this.name);

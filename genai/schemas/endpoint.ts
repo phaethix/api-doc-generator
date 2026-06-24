@@ -21,7 +21,8 @@ export const endpointSchema = {
     },
     path: {
       type: "string",
-      description: "URL path for this endpoint. Extract from the user's description if explicitly given (e.g. '/api/v1/auth/login'). Otherwise infer a RESTful path based on the resource and action (e.g. '/users/{id}' for get-user-by-id, '/orders' for create-order). NEVER use just '/' — always provide a meaningful resource path starting with '/'.",
+      description:
+        "URL path for this endpoint. Extract from the user's description if explicitly given (e.g. '/api/v1/auth/login'). Otherwise infer a RESTful path based on the resource and action (e.g. '/users/{id}' for get-user-by-id, '/orders' for create-order). NEVER use just '/' — always provide a meaningful resource path starting with '/'.",
       pattern: "^/",
       minLength: 2,
     },
@@ -50,7 +51,10 @@ export const endpointSchema = {
           schema: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["string", "integer", "number", "boolean", "array"] },
+              type: {
+                type: "string",
+                enum: ["string", "integer", "number", "boolean", "array"],
+              },
               format: { type: "string" },
               example: {},
             },

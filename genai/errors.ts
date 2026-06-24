@@ -8,11 +8,11 @@
 
 // Error categories
 export type LLMErrorCategory =
-  | "auth"        // 401 / 403 — bad or missing key
-  | "rate_limit"  // 429 — too many requests
-  | "server"      // 5xx — upstream provider error
-  | "network"     // DNS / timeout / connection refused
-  | "unknown";    // any other failure
+  | "auth" // 401 / 403 — bad or missing key
+  | "rate_limit" // 429 — too many requests
+  | "server" // 5xx — upstream provider error
+  | "network" // DNS / timeout / connection refused
+  | "unknown"; // any other failure
 
 // Provider errors
 export class LLMError extends Error {

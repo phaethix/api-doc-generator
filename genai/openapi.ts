@@ -11,11 +11,23 @@
 // `json_object` + local validation if the provider rejects the schema.
 
 import { LLMClient, LLMError } from "./index.ts";
-import type { ChatRequest, ChatResponse, GenerateOpenAPIResult, OpenAPIScope, ResponseFormat } from "./types.ts";
-import { endpointSchema, documentSchema, ENDPOINT_SCHEMA_NAME, DOCUMENT_SCHEMA_NAME } from "./schemas/index.ts";
+import type {
+  ChatRequest,
+  ChatResponse,
+  GenerateOpenAPIResult,
+  OpenAPIScope,
+  ResponseFormat,
+} from "./types.ts";
+import {
+  DOCUMENT_SCHEMA_NAME,
+  documentSchema,
+  ENDPOINT_SCHEMA_NAME,
+  endpointSchema,
+} from "./schemas/index.ts";
 
 // Prompt templates
-const ENDPOINT_SYSTEM_PROMPT = `You are an expert API designer. Given a natural-language description, produce a single OpenAPI endpoint definition as a JSON object.
+const ENDPOINT_SYSTEM_PROMPT =
+  `You are an expert API designer. Given a natural-language description, produce a single OpenAPI endpoint definition as a JSON object.
 
 Requirements:
 - Output ONLY a valid JSON object — no prose, no markdown fences, no comments.
@@ -40,7 +52,8 @@ Example:
   User says: "Create order endpoint"
   You output: { "method": "POST", "path": "/orders", ... }`;
 
-const DOCUMENT_SYSTEM_PROMPT = `You are an expert API architect. Given a natural-language description of a service, produce a complete OpenAPI 3.0.3 document as a JSON object.
+const DOCUMENT_SYSTEM_PROMPT =
+  `You are an expert API architect. Given a natural-language description of a service, produce a complete OpenAPI 3.0.3 document as a JSON object.
 
 Requirements:
 - Output ONLY a valid JSON object — no prose, no markdown fences, no comments.
@@ -65,7 +78,8 @@ Requirements:
 export async function generateOpenAPIEndpoint(
   client: LLMClient,
   description: string,
-  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } =
+    {},
 ): Promise<GenerateOpenAPIResult> {
   return generateOpenAPI({
     client,
@@ -83,7 +97,8 @@ export async function generateOpenAPIEndpoint(
 export async function generateOpenAPIDocument(
   client: LLMClient,
   description: string,
-  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } =
+    {},
 ): Promise<GenerateOpenAPIResult> {
   return generateOpenAPI({
     client,
@@ -106,11 +121,18 @@ interface GenerateOpts {
   timeoutMs?: number;
 }
 
-async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResult> {
-  const { client, description, scope, temperature, maxTokens, timeoutMs } = opts;
+async function generateOpenAPI(
+  opts: GenerateOpts,
+): Promise<GenerateOpenAPIResult> {
+  const { client, description, scope, temperature, maxTokens, timeoutMs } =
+    opts;
 
-  const systemPrompt = scope === "endpoint" ? ENDPOINT_SYSTEM_PROMPT : DOCUMENT_SYSTEM_PROMPT;
-  const schemaName = scope === "endpoint" ? ENDPOINT_SCHEMA_NAME : DOCUMENT_SCHEMA_NAME;
+  const systemPrompt = scope === "endpoint"
+    ? ENDPOINT_SYSTEM_PROMPT
+    : DOCUMENT_SYSTEM_PROMPT;
+  const schemaName = scope === "endpoint"
+    ? ENDPOINT_SCHEMA_NAME
+    : DOCUMENT_SCHEMA_NAME;
   const schema = scope === "endpoint" ? endpointSchema : documentSchema;
 
   // Try to extract a path from the description so we can force-feed it to the AI.
@@ -118,16 +140,17 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
 
   let pathDirective = "";
   if (extractedPath) {
-    pathDirective = `\n\n⚠️ CRITICAL INSTRUCTION: The URL path for this endpoint is "${extractedPath}". ` +
+    pathDirective =
+      `\n\n⚠️ CRITICAL INSTRUCTION: The URL path for this endpoint is "${extractedPath}". ` +
       `You MUST use "${extractedPath}" as the value of the "path" field in your JSON output. ` +
       `Do NOT change it, do NOT use "/", do NOT invent a different path. Copy "${extractedPath}" exactly.`;
   } else {
-    pathDirective = `\n\n⚠️ CRITICAL INSTRUCTION: You must INFER a RESTful URL path from the description. ` +
+    pathDirective =
+      `\n\n⚠️ CRITICAL INSTRUCTION: You must INFER a RESTful URL path from the description. ` +
       `Never use "/" as the path. Examples: "create user" → "/users", "get user by id" → "/users/{id}", "login" → "/auth/login".`;
   }
 
-  const userPrompt =
-    `Description: ${description}\n\n` +
+  const userPrompt = `Description: ${description}\n\n` +
     `Produce the JSON object now — no explanation, no markdown.${pathDirective}`;
 
   // Attempt 1: json_schema (strict)
@@ -135,7 +158,11 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
     type: "json_schema",
     json_schema: {
       name: schemaName,
-      description: `A ${scope === "endpoint" ? "single OpenAPI endpoint" : "complete OpenAPI 3.0.3 document"} definition.`,
+      description: `A ${
+        scope === "endpoint"
+          ? "single OpenAPI endpoint"
+          : "complete OpenAPI 3.0.3 document"
+      } definition.`,
       schema: schema as unknown as Record<string, unknown>,
       strict: true,
     },
@@ -187,7 +214,11 @@ async function generateWithJsonObject(
 
 // Helpers
 
-function parseAndValidate(content: string, scope: OpenAPIScope, extractedPath: string | null = null): unknown {
+function parseAndValidate(
+  content: string,
+  scope: OpenAPIScope,
+  extractedPath: string | null = null,
+): unknown {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
@@ -213,7 +244,9 @@ function parseAndValidate(content: string, scope: OpenAPIScope, extractedPath: s
       validateDocument(parsed);
     }
   } catch (err) {
-    const rawSnippet = typeof content === "string" ? content.slice(0, 500) : JSON.stringify(parsed).slice(0, 500);
+    const rawSnippet = typeof content === "string"
+      ? content.slice(0, 500)
+      : JSON.stringify(parsed).slice(0, 500);
     const originalMsg = err instanceof Error ? err.message : String(err);
     throw new LLMError(
       `${originalMsg}. Raw AI output: ${rawSnippet}`,
@@ -228,41 +261,96 @@ function parseAndValidate(content: string, scope: OpenAPIScope, extractedPath: s
 
 function validateEndpoint(value: unknown): void {
   if (!value || typeof value !== "object") {
-    throw new LLMError("Endpoint must be an object", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Endpoint must be an object",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
   const v = value as Record<string, unknown>;
-  if (typeof v.method !== "string") throw new LLMError("Endpoint.method must be a string", "unknown", undefined, "openapi-generator");
-  if (typeof v.path !== "string" || v.path.length < 2 || !v.path.startsWith("/")) {
+  if (typeof v.method !== "string") {
     throw new LLMError(
-      `Endpoint.path must be a non-trivial string starting with '/' (e.g. '/users/{id}'), got: ${JSON.stringify(v.path)}`,
+      "Endpoint.method must be a string",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
+  }
+  if (
+    typeof v.path !== "string" || v.path.length < 2 || !v.path.startsWith("/")
+  ) {
+    throw new LLMError(
+      `Endpoint.path must be a non-trivial string starting with '/' (e.g. '/users/{id}'), got: ${
+        JSON.stringify(v.path)
+      }`,
       "unknown",
       undefined,
       "openapi-generator",
     );
   }
   if (typeof v.summary !== "string" || v.summary.length === 0) {
-    throw new LLMError("Endpoint.summary must be a non-empty string", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Endpoint.summary must be a non-empty string",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
   if (!v.responses || typeof v.responses !== "object") {
-    throw new LLMError("Endpoint.responses must be a non-empty object", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Endpoint.responses must be a non-empty object",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
 }
 
 function validateDocument(value: unknown): void {
   if (!value || typeof value !== "object") {
-    throw new LLMError("Document must be an object", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Document must be an object",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
   const v = value as Record<string, unknown>;
-  if (v.openapi !== "3.0.3") throw new LLMError("Document.openapi must be '3.0.3'", "unknown", undefined, "openapi-generator");
+  if (v.openapi !== "3.0.3") {
+    throw new LLMError(
+      "Document.openapi must be '3.0.3'",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
+  }
   if (!v.info || typeof v.info !== "object") {
-    throw new LLMError("Document.info must be an object with title and version", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Document.info must be an object with title and version",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
   const info = v.info as Record<string, unknown>;
   if (typeof info.title !== "string" || typeof info.version !== "string") {
-    throw new LLMError("Document.info.title and version must be strings", "unknown", undefined, "openapi-generator");
+    throw new LLMError(
+      "Document.info.title and version must be strings",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
-  if (!v.paths || typeof v.paths !== "object" || Object.keys(v.paths).length === 0) {
-    throw new LLMError("Document.paths must be a non-empty object", "unknown", undefined, "openapi-generator");
+  if (
+    !v.paths || typeof v.paths !== "object" || Object.keys(v.paths).length === 0
+  ) {
+    throw new LLMError(
+      "Document.paths must be a non-empty object",
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
 }
 
@@ -293,7 +381,8 @@ function isSchemaUnsupportedError(err: unknown): boolean {
   if (!(err instanceof LLMError)) return false;
   if (err.status !== 400) return false;
   const msg = err.message.toLowerCase();
-  return msg.includes("response_format") || msg.includes("json_schema") || msg.includes("schema") || msg.includes("unsupported");
+  return msg.includes("response_format") || msg.includes("json_schema") ||
+    msg.includes("schema") || msg.includes("unsupported");
 }
 
 // Path extraction & post-processing
@@ -337,7 +426,10 @@ function fixPathIfNeeded(
   const currentPath = typeof obj.path === "string" ? obj.path : "";
 
   // If the AI's path is invalid (too short, just "/", or missing), use the extracted one.
-  if (currentPath.length < 2 || currentPath === "/" || !currentPath.startsWith("/")) {
+  if (
+    currentPath.length < 2 || currentPath === "/" ||
+    !currentPath.startsWith("/")
+  ) {
     if (extractedPath) {
       obj.path = extractedPath;
     } else {
@@ -348,7 +440,10 @@ function fixPathIfNeeded(
   }
 
   // If responses is empty, add a default 200 success response.
-  if (!obj.responses || typeof obj.responses !== "object" || Object.keys(obj.responses as object).length === 0) {
+  if (
+    !obj.responses || typeof obj.responses !== "object" ||
+    Object.keys(obj.responses as object).length === 0
+  ) {
     obj.responses = {
       "200": {
         description: "Successful operation",
@@ -384,8 +479,8 @@ function inferPathFromSummary(summary: string): string {
 
 // Re-export the schema names for convenience, so callers don't need to
 // know about the schemas module.
-export { ENDPOINT_SCHEMA_NAME, DOCUMENT_SCHEMA_NAME };
-export { endpointSchema, documentSchema } from "./schemas/index.ts";
+export { DOCUMENT_SCHEMA_NAME, ENDPOINT_SCHEMA_NAME };
+export { documentSchema, endpointSchema } from "./schemas/index.ts";
 
 // Streaming support
 
@@ -404,7 +499,8 @@ export type OpenAPIStreamEvent =
 export async function generateOpenAPIEndpointStream(
   client: LLMClient,
   description: string,
-  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } =
+    {},
 ): Promise<ReadableStream<OpenAPIStreamEvent>> {
   return generateOpenAPIStream({
     client,
@@ -422,7 +518,8 @@ export async function generateOpenAPIEndpointStream(
 export async function generateOpenAPIDocumentStream(
   client: LLMClient,
   description: string,
-  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } =
+    {},
 ): Promise<ReadableStream<OpenAPIStreamEvent>> {
   return generateOpenAPIStream({
     client,
@@ -438,17 +535,22 @@ export async function generateOpenAPIDocumentStream(
 async function generateOpenAPIStream(
   opts: GenerateOpts,
 ): Promise<ReadableStream<OpenAPIStreamEvent>> {
-  const { client, description, scope, temperature, maxTokens, timeoutMs } = opts;
+  const { client, description, scope, temperature, maxTokens, timeoutMs } =
+    opts;
 
-  const systemPrompt = scope === "endpoint" ? ENDPOINT_SYSTEM_PROMPT : DOCUMENT_SYSTEM_PROMPT;
+  const systemPrompt = scope === "endpoint"
+    ? ENDPOINT_SYSTEM_PROMPT
+    : DOCUMENT_SYSTEM_PROMPT;
   const extractedPath = extractPathFromDescription(description);
 
   let pathDirective = "";
   if (extractedPath) {
-    pathDirective = `\n\nCRITICAL: The URL path is "${extractedPath}". Use it exactly.`;
+    pathDirective =
+      `\n\nCRITICAL: The URL path is "${extractedPath}". Use it exactly.`;
   }
 
-  const userPrompt = `Description: ${description}\n\nProduce JSON now — no explanation.${pathDirective}`;
+  const userPrompt =
+    `Description: ${description}\n\nProduce JSON now — no explanation.${pathDirective}`;
 
   // Use json_object for streaming (json_schema + stream not universally supported).
   const request: ChatRequest = {

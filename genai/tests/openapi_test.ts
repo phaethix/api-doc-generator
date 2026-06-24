@@ -8,20 +8,30 @@
 //   - Local validation rejects malformed output
 //   - Handler integration (end-to-end with mocked client)
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "jsr:@std/assert";
-import { ChatCompletionsProvider } from "../providers/chat_completions.ts";
-import { LLMClient, LLMError, LLMConfigError, createLLMClient } from "../index.ts";
 import {
-  generateOpenAPIEndpoint,
+  assertEquals,
+  assertExists,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
+import { ChatCompletionsProvider } from "../providers/chat_completions.ts";
+import { LLMClient, LLMError } from "../index.ts";
+import {
   generateOpenAPIDocument,
+  generateOpenAPIEndpoint,
 } from "../openapi.ts";
 import {
-  endpointSchema,
+  DOCUMENT_SCHEMA_NAME,
   documentSchema,
   ENDPOINT_SCHEMA_NAME,
-  DOCUMENT_SCHEMA_NAME,
+  endpointSchema,
 } from "../schemas/index.ts";
-import type { ChatRequest, ChatResponse, Provider, ResponseFormat } from "../types.ts";
+import type {
+  ChatRequest,
+  ChatResponse,
+  Provider,
+  ResponseFormat,
+} from "../types.ts";
 
 // Helpers
 
@@ -43,7 +53,14 @@ function openaiResponse(opts: {
   status?: number;
   body?: unknown;
 }): Response {
-  const { content, promptTokens = 10, completionTokens = 20, model = "agnes-2.0-flash", status = 200, body } = opts;
+  const {
+    content,
+    promptTokens = 10,
+    completionTokens = 20,
+    model = "agnes-2.0-flash",
+    status = 200,
+    body,
+  } = opts;
   if (body !== undefined) {
     return new Response(JSON.stringify(body), {
       status,
@@ -76,7 +93,7 @@ function openaiResponse(opts: {
 
 Deno.test("Provider sends response_format.json_schema when type=json_schema", async () => {
   let capturedBody: Record<string, unknown> = {};
-  const restore = installFetch(async (input, init) => {
+  const restore = installFetch(async (_input, init) => {
     const body = init?.body as string | undefined;
     if (body) capturedBody = JSON.parse(body);
     return openaiResponse({
@@ -108,7 +125,7 @@ Deno.test("Provider sends response_format.json_schema when type=json_schema", as
 
 Deno.test("Provider sends response_format.json_object when type=json_object", async () => {
   let capturedBody: Record<string, unknown> = {};
-  const restore = installFetch(async (input, init) => {
+  const restore = installFetch(async (_input, init) => {
     const body = init?.body as string | undefined;
     if (body) capturedBody = JSON.parse(body);
     return openaiResponse({ content: '{"a":1}' });
@@ -127,7 +144,7 @@ Deno.test("Provider sends response_format.json_object when type=json_object", as
 
 Deno.test("Provider omits response_format when type=text", async () => {
   let capturedBody: Record<string, unknown> = {};
-  const restore = installFetch(async (input, init) => {
+  const restore = installFetch(async (_input, init) => {
     const body = init?.body as string | undefined;
     if (body) capturedBody = JSON.parse(body);
     return openaiResponse({ content: "plain text" });
@@ -148,7 +165,10 @@ Deno.test("Provider includes response body in error message for 400", async () =
   const restore = installFetch(async () => {
     return new Response(
       JSON.stringify({
-        error: { message: "response_format json_schema is not supported by this model", type: "invalid_request_error" },
+        error: {
+          message: "response_format json_schema is not supported by this model",
+          type: "invalid_request_error",
+        },
       }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
@@ -182,7 +202,10 @@ Deno.test("Provider sets formatUsed in ChatResponse when json_schema was used", 
     const provider = new ChatCompletionsProvider("test-key");
     const res = await provider.chat({
       messages: [{ role: "user", content: "hi" }],
-      responseFormat: { type: "json_schema", json_schema: { name: "T", schema: {} } },
+      responseFormat: {
+        type: "json_schema",
+        json_schema: { name: "T", schema: {} },
+      },
     });
     assertEquals(res.formatUsed, "json_schema");
   } finally {
@@ -194,7 +217,9 @@ Deno.test("Provider sets formatUsed='text' when no responseFormat was given", as
   const restore = installFetch(async () => openaiResponse({ content: "hi" }));
   try {
     const provider = new ChatCompletionsProvider("test-key");
-    const res = await provider.chat({ messages: [{ role: "user", content: "hi" }] });
+    const res = await provider.chat({
+      messages: [{ role: "user", content: "hi" }],
+    });
     assertEquals(res.formatUsed, "text");
   } finally {
     restore();
@@ -205,8 +230,19 @@ Deno.test("Provider sets formatUsed='text' when no responseFormat was given", as
 
 Deno.test("endpointSchema is a valid JSON Schema with required method/path/summary/responses", () => {
   assertEquals(endpointSchema.type, "object");
-  assertEquals(endpointSchema.required, ["method", "path", "summary", "responses"]);
-  assertEquals(endpointSchema.properties.method.enum, ["GET", "POST", "PUT", "PATCH", "DELETE"]);
+  assertEquals(endpointSchema.required, [
+    "method",
+    "path",
+    "summary",
+    "responses",
+  ]);
+  assertEquals(endpointSchema.properties.method.enum, [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+  ]);
   assertExists(endpointSchema.properties.path.pattern);
 });
 
@@ -232,20 +268,31 @@ Deno.test("generateEndpoint returns a valid endpoint result with json_schema", a
       { name: "id", in: "path", required: true, schema: { type: "string" } },
     ],
     responses: {
-      "200": { description: "OK", content: { "application/json": { schema: { type: "object" } } } },
+      "200": {
+        description: "OK",
+        content: { "application/json": { schema: { type: "object" } } },
+      },
     },
   };
 
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(validEndpoint) }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(validEndpoint) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
-    const result = await generateOpenAPIEndpoint(client, "User management: get user by id");
+    const result = await generateOpenAPIEndpoint(
+      client,
+      "User management: get user by id",
+    );
 
     assertEquals(result.scope, "endpoint");
     assertEquals(result.formatUsed, "json_schema");
     assertEquals((result.openapi as Record<string, unknown>).method, "GET");
-    assertEquals((result.openapi as Record<string, unknown>).path, "/users/{id}");
+    assertEquals(
+      (result.openapi as Record<string, unknown>).path,
+      "/users/{id}",
+    );
     assertEquals(result.usage.promptTokens, 10);
     assertEquals(result.model, "agnes-2.0-flash");
   } finally {
@@ -264,11 +311,16 @@ Deno.test("generateDocument returns a valid document result with json_schema", a
     },
   };
 
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(validDoc) }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(validDoc) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
-    const result = await generateOpenAPIDocument(client, "A simple user service");
+    const result = await generateOpenAPIDocument(
+      client,
+      "A simple user service",
+    );
 
     assertEquals(result.scope, "document");
     assertEquals(result.formatUsed, "json_schema");
@@ -289,7 +341,9 @@ Deno.test("generateEndpoint falls back to json_object when provider rejects json
       // First call: json_schema rejected by provider
       return openaiResponse({
         status: 400,
-        body: { error: { message: "response_format json_schema is not supported" } },
+        body: {
+          error: { message: "response_format json_schema is not supported" },
+        },
       });
     }
     // Second call: json_object succeeds
@@ -317,7 +371,9 @@ Deno.test("generateEndpoint falls back to json_object when provider rejects json
 // OpenAPIGenerator: validation errors
 
 Deno.test("generateEndpoint throws LLMError when AI returns invalid JSON", async () => {
-  const restore = installFetch(async () => openaiResponse({ content: "not valid json {" }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: "not valid json {" })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
@@ -334,7 +390,9 @@ Deno.test("generateEndpoint throws LLMError when AI returns invalid JSON", async
 Deno.test("generateEndpoint throws LLMError when endpoint is missing required fields", async () => {
   // Missing "summary" which is required by our validation
   const badEndpoint = { method: "GET", path: "/x" };
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(badEndpoint) }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(badEndpoint) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
@@ -349,8 +407,14 @@ Deno.test("generateEndpoint throws LLMError when endpoint is missing required fi
 
 Deno.test("generateEndpoint auto-fixes invalid path instead of throwing", async () => {
   // AI returned a path with no leading slash — should be auto-fixed to a valid path.
-  const badEndpoint = { method: "GET", path: "no-leading-slash", summary: "bad" };
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(badEndpoint) }));
+  const badEndpoint = {
+    method: "GET",
+    path: "no-leading-slash",
+    summary: "bad",
+  };
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(badEndpoint) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
@@ -372,7 +436,9 @@ Deno.test("generateDocument throws LLMError when openapi version is wrong", asyn
     info: { title: "T", version: "1.0" },
     paths: { "/x": { get: { summary: "x" } } },
   };
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(badDoc) }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(badDoc) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
@@ -405,7 +471,12 @@ Deno.test("generateDocument output passes through backend isApiSpec validation",
         get: {
           summary: "Get user by ID",
           parameters: [
-            { name: "id", in: "path", required: true, schema: { type: "string" } },
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
           ],
           responses: {
             "200": {
@@ -419,22 +490,33 @@ Deno.test("generateDocument output passes through backend isApiSpec validation",
     },
   };
 
-  const restore = installFetch(async () => openaiResponse({ content: JSON.stringify(validDoc) }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: JSON.stringify(validDoc) })
+  );
   try {
     const provider = new ChatCompletionsProvider("test-key");
     const client = new LLMClient(provider);
-    const result = await generateOpenAPIDocument(client, "User service with list and get by id");
+    const result = await generateOpenAPIDocument(
+      client,
+      "User service with list and get by id",
+    );
 
     assertEquals(result.scope, "document");
 
     // Verify the output conforms to what the backend pipeline expects.
     // The backend's isApiSpec requires: info{title,version}, paths{...},
     // and each operation needs summary + responses.
-    const doc = result.openapi as { info: { title: string; version: string }; paths: Record<string, unknown> };
+    const doc = result.openapi as {
+      info: { title: string; version: string };
+      paths: Record<string, unknown>;
+    };
     assertEquals(doc.info.title, "Test API");
     assertEquals(doc.info.version, "1.0.0");
     assertEquals(typeof doc.paths["/users"], "object");
-    const usersGet = (doc.paths["/users"] as Record<string, unknown>).get as { summary: string; responses: object };
+    const usersGet = (doc.paths["/users"] as Record<string, unknown>).get as {
+      summary: string;
+      responses: object;
+    };
     assertEquals(usersGet.summary, "List users");
     assertExists(usersGet.responses);
   } finally {
@@ -444,7 +526,9 @@ Deno.test("generateDocument output passes through backend isApiSpec validation",
 
 // ChatRequest: responseFormat acceptance
 Deno.test("LLMClient.complete accepts responseFormat without error", async () => {
-  const restore = installFetch(async () => openaiResponse({ content: "not json but we won't validate" }));
+  const restore = installFetch(async () =>
+    openaiResponse({ content: "not json but we won't validate" })
+  );
   try {
     // Use a MockProvider that just records the request
     class MockProvider implements Provider {
@@ -463,7 +547,10 @@ Deno.test("LLMClient.complete accepts responseFormat without error", async () =>
     const client = new LLMClient(mock);
     await client.complete({
       messages: [{ role: "user", content: "hi" }],
-      responseFormat: { type: "json_schema", json_schema: { name: "T", schema: {} } },
+      responseFormat: {
+        type: "json_schema",
+        json_schema: { name: "T", schema: {} },
+      },
     });
     assertExists(mock.lastReq?.responseFormat);
     assertEquals(mock.lastReq!.responseFormat!.type, "json_schema");

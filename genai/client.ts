@@ -38,8 +38,13 @@ export class LLMClient {
     if (!req.messages || req.messages.length === 0) {
       throw new Error("LLMClient.complete: at least one message is required");
     }
-    if (req.temperature !== undefined && (req.temperature < 0 || req.temperature > 2)) {
-      throw new Error("LLMClient.complete: temperature must be between 0 and 2");
+    if (
+      req.temperature !== undefined &&
+      (req.temperature < 0 || req.temperature > 2)
+    ) {
+      throw new Error(
+        "LLMClient.complete: temperature must be between 0 and 2",
+      );
     }
     if (req.maxTokens !== undefined && req.maxTokens <= 0) {
       throw new Error("LLMClient.complete: maxTokens must be positive");
