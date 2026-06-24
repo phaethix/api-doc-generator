@@ -22,7 +22,23 @@ Requirements:
 - The JSON must conform to the provided JSON Schema (method, path, summary, description, parameters, requestBody, responses, tags).
 - Use realistic field names that match RESTful conventions.
 - Always include at least a "200" success response and one error response.
-- For path parameters, set "required": true and "in": "path".`;
+- For path parameters, set "required": true and "in": "path".
+
+CRITICAL — How to determine the "path" field:
+  1. If the user's description EXPLICITLY mentions a URL path (e.g. "/api/v1/auth/login", "/users/{id}"), you MUST use that exact path in the "path" field.
+  2. If the user describes the endpoint's purpose but does NOT specify a path, you MUST INFER a RESTful path based on the resource and action (e.g. for "create user" use "/users", for "get user by id" use "/users/{id}", for "login" use "/auth/login" or "/login").
+  3. NEVER use "/" as the path — it is almost always wrong. Every endpoint should have a meaningful resource path.
+  4. The path MUST start with "/" and use lowercase, hyphenated or RESTful conventions.
+
+Example:
+  User says: "用户登录接口，路径为 /api/v1/auth/login，接收手机号和验证码，返回JWT token"
+  You output: { "method": "POST", "path": "/api/v1/auth/login", ... }
+
+  User says: "获取用户详情，根据ID查询"
+  You output: { "method": "GET", "path": "/users/{id}", ... }
+
+  User says: "创建订单接口"
+  You output: { "method": "POST", "path": "/orders", ... }`;
 
 const DOCUMENT_SYSTEM_PROMPT = `You are an expert API architect. Given a natural-language description of a service, produce a complete OpenAPI 3.0.3 document as a JSON object.
 
@@ -97,9 +113,22 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
   const schemaName = scope === "endpoint" ? ENDPOINT_SCHEMA_NAME : DOCUMENT_SCHEMA_NAME;
   const schema = scope === "endpoint" ? endpointSchema : documentSchema;
 
+  // Try to extract a path from the description so we can force-feed it to the AI.
+  const extractedPath = extractPathFromDescription(description);
+
+  let pathDirective = "";
+  if (extractedPath) {
+    pathDirective = `\n\n⚠️ CRITICAL INSTRUCTION: The URL path for this endpoint is "${extractedPath}". ` +
+      `You MUST use "${extractedPath}" as the value of the "path" field in your JSON output. ` +
+      `Do NOT change it, do NOT use "/", do NOT invent a different path. Copy "${extractedPath}" exactly.`;
+  } else {
+    pathDirective = `\n\n⚠️ CRITICAL INSTRUCTION: You must INFER a RESTful URL path from the description. ` +
+      `Never use "/" as the path. Examples: "create user" → "/users", "get user by id" → "/users/{id}", "login" → "/auth/login".`;
+  }
+
   const userPrompt =
     `Description: ${description}\n\n` +
-    `Produce the JSON object now — no explanation, no markdown.`;
+    `Produce the JSON object now — no explanation, no markdown.${pathDirective}`;
 
   // ── Attempt 1: json_schema (strict) ─────────────
   const strictFormat: ResponseFormat = {
@@ -126,7 +155,10 @@ async function generateOpenAPI(opts: GenerateOpts): Promise<GenerateOpenAPIResul
   try {
     const response = await client.complete(request);
     const parsed = parseAndValidate(response.content, scope);
-    return buildResult(parsed, "json_schema", response, scope);
+    // Post-process: if AI returned an invalid path but we extracted a path
+    // from the description, use the extracted one.
+    const fixed = fixPathIfNeeded(parsed, extractedPath, scope);
+    return buildResult(fixed, "json_schema", response, scope);
   } catch (err) {
     // If the provider rejected the json_schema (model doesn't support it),
     // fall back to json_object + local validation.
@@ -172,10 +204,21 @@ function parseAndValidate(content: string, scope: OpenAPIScope): unknown {
   }
 
   // Local validation — check the bare minimum shape.
-  if (scope === "endpoint") {
-    validateEndpoint(parsed);
-  } else {
-    validateDocument(parsed);
+  try {
+    if (scope === "endpoint") {
+      validateEndpoint(parsed);
+    } else {
+      validateDocument(parsed);
+    }
+  } catch (err) {
+    const rawSnippet = typeof content === "string" ? content.slice(0, 500) : JSON.stringify(parsed).slice(0, 500);
+    const originalMsg = err instanceof Error ? err.message : String(err);
+    throw new LLMError(
+      `${originalMsg}. Raw AI output: ${rawSnippet}`,
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
 
   return parsed;
@@ -187,8 +230,13 @@ function validateEndpoint(value: unknown): void {
   }
   const v = value as Record<string, unknown>;
   if (typeof v.method !== "string") throw new LLMError("Endpoint.method must be a string", "unknown", undefined, "openapi-generator");
-  if (typeof v.path !== "string" || !v.path.startsWith("/")) {
-    throw new LLMError("Endpoint.path must be a string starting with '/'", "unknown", undefined, "openapi-generator");
+  if (typeof v.path !== "string" || v.path.length < 2 || !v.path.startsWith("/")) {
+    throw new LLMError(
+      `Endpoint.path must be a non-trivial string starting with '/' (e.g. '/users/{id}'), got: ${JSON.stringify(v.path)}`,
+      "unknown",
+      undefined,
+      "openapi-generator",
+    );
   }
   if (typeof v.summary !== "string" || v.summary.length === 0) {
     throw new LLMError("Endpoint.summary must be a non-empty string", "unknown", undefined, "openapi-generator");
@@ -244,6 +292,54 @@ function isSchemaUnsupportedError(err: unknown): boolean {
   if (err.status !== 400) return false;
   const msg = err.message.toLowerCase();
   return msg.includes("response_format") || msg.includes("json_schema") || msg.includes("schema") || msg.includes("unsupported");
+}
+
+// ── Path extraction & post-processing ──────────────
+
+/**
+ * Extract a URL path from a natural-language description.
+ * Matches patterns like:
+ *   - "/api/v1/auth/login"
+ *   - "/users/{id}"
+ *   - "/login"
+ *   - "路径为 /api/v1/auth/login"
+ *   - "path is /users"
+ */
+function extractPathFromDescription(description: string): string | null {
+  // Match a slash followed by word chars, slashes, hyphens, underscores, and curly-braced params.
+  const pathRegex = /\/(?:[a-zA-Z0-9_\-{}\/]+)/g;
+  const matches = description.match(pathRegex);
+  if (!matches) return null;
+
+  // Return the longest match (most specific path), filtering out trivial ones like "/".
+  const valid = matches.filter((m) => m.length >= 2 && m !== "/");
+  if (valid.length === 0) return null;
+
+  // Prefer paths that look like API paths (contain multiple segments or params).
+  valid.sort((a, b) => b.length - a.length);
+  return valid[0];
+}
+
+/**
+ * If the AI returned an invalid path but we extracted a path from the description,
+ * override the AI's path with the extracted one.
+ */
+function fixPathIfNeeded(
+  parsed: unknown,
+  extractedPath: string | null,
+  scope: OpenAPIScope,
+): unknown {
+  if (scope !== "endpoint" || !extractedPath) return parsed;
+
+  const obj = parsed as Record<string, unknown>;
+  const currentPath = typeof obj.path === "string" ? obj.path : "";
+
+  // If the AI's path is invalid (too short, just "/", or missing), use the extracted one.
+  if (currentPath.length < 2 || currentPath === "/" || !currentPath.startsWith("/")) {
+    obj.path = extractedPath;
+  }
+
+  return obj;
 }
 
 // Re-export the schema names for convenience, so callers don't need to
