@@ -11,8 +11,11 @@ RUN npm run build
 FROM denoland/deno:alpine-2.3.3
 WORKDIR /app
 
-# Copy all backend source code
+# Copy backend source code
 COPY backend/ ./backend/
+
+# Copy genai module (required for AI features)
+COPY genai/ ./genai/
 
 # Copy frontend build output
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
@@ -23,4 +26,4 @@ EXPOSE 8080
 # Start the server
 WORKDIR /app/backend
 ENTRYPOINT ["deno"]
-CMD ["run", "--allow-net", "--allow-read", "--allow-env", "main.ts"]
+CMD ["run", "--allow-net", "--allow-read", "--allow-env", "--allow-write", "main.ts"]

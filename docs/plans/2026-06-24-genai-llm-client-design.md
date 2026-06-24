@@ -159,7 +159,7 @@ export async function handleAIPing(_req: Request): Promise<Response> {
 |---|------|----------|------|
 | 1 | LLM 基础调用 | `/ai/ping` 端点，错误分类，超时控制 | ✅ 完成 |
 | 2 | 结构化输出 | AI 严格输出 OpenAPI JSON (JSON Schema / JSON Mode) | ✅ 完成 |
-| 3 | Streaming | 润色过程打字机效果 | 📋 待规划 |
+| 3 | Streaming | SSE 流式生成，实时反馈 | ✅ 完成 |
 | 4 | Prompt 工程 | 不同 Prompt 质量对比 | 📋 待规划 |
 | 5 | Token 优化 | 缓存、成本分析 | 📋 待规划 |
 | 6 | RAG 基础 | 文档智能问答 | 📋 待规划 |
@@ -202,3 +202,45 @@ curl -X POST 'http://localhost:8080/ai/generate-openapi' \
   -d '{"description": "用户管理系统，包含查询用户列表和根据ID查询用户详情两个接口", "scope": "document"}'
 ```
 返回合法 OpenAPI 3.0.3 JSON，`format_used: "json_schema"`。
+
+### 12. 阶段 3 实施摘要
+
+#### 12.1 新增文件
+
+- `genai/stream.ts` — SSE 流式响应解析器
+- `genai/tests/stream_test.ts` — 流式相关测试
+
+#### 12.2 修改文件
+
+- `genai/providers/chat_completions.ts` — 新增 `chatStream()` 方法，支持 SSE 流式响应
+- `genai/client.ts` — 新增 `completeStream()` 方法，返回 `ReadableStream`
+- `genai/openapi.ts` — 新增 `generateOpenAPIEndpointStream()` 和 `generateOpenAPIDocumentStream()` 流式 API
+- `genai/index.ts` — 导出流式 API
+- `genai/types.ts` — 新增流式相关类型（`StreamEvent` 等）
+- `backend/handlers/ai.ts` — 新增 `handleAIGenerateOpenAPIStream`
+- `backend/router.ts` — 注册 `/ai/generate-openapi-stream` 路由
+
+#### 12.3 核心特性
+
+- **SSE 流式输出**：AI 生成过程实时返回，前端可实现打字机效果
+- **错误流式传递**：流式过程中发生错误，通过 SSE `error` 事件通知前端
+- **双粒度流式生成**：`scope: "endpoint"` 和 `scope: "document"` 均支持流式
+
+#### 12.4 端点定义
+
+```
+POST /ai/generate-openapi-stream
+Content-Type: application/json
+
+{
+  "description": "用户管理系统",
+  "scope": "document"
+}
+
+Response: text/event-stream
+data: {"type": "start", "scope": "document"}
+data: {"type": "token", "content": "{"}
+data: {"type": "token", "content": "openapi"}
+...
+data: {"type": "done", "openapi": {...}, "usage": {...}}
+```

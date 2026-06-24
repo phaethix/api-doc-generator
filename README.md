@@ -19,10 +19,28 @@ Generate beautiful Markdown / HTML / JSON docs from OpenAPI specs or custom API 
 
 - **Multi-format output** — Markdown, HTML, and JSON
 - **OpenAPI support** — Import OpenAPI 3.0 / Swagger specs
-- **Type-safe** — Full TypeScript with strict mode
+- **AI-powered generation** — Generate OpenAPI specs from natural language via LLM
+- **Type-safe** — Full TypeScript with strict mode across all modules
 - **Full-stack** — Deno backend + React frontend, single deployment
-- **RESTful API** — Complete HTTP interface
-- **Modern UI** — Tailwind CSS with dark mode
+- **RESTful API** — Complete HTTP interface including AI endpoints
+- **Modern UI** — Tailwind CSS with dark mode, AI and standard modes
+- **Streaming support** — Streaming AI generation with real-time feedback
+- **Structured output** — AI generates strictly valid OpenAPI 3.0 JSON via JSON Schema
+
+### 🖼️ Preview
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/frontend-main.png" /><br/>
+      <em>Main Mode</em>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/frontend-ai.png" /><br/>
+      <em>AI Mode</em>
+    </td>
+  </tr>
+</table>
 
 ### 🏗️ Architecture
 
@@ -32,6 +50,7 @@ flowchart LR
     subgraph FE["React SPA"]
         Editor[JsonEditor]
         Output[OutputPanel]
+        AIPanel[AI Panel]
     end
 
     subgraph BE["Deno Backend"]
@@ -40,48 +59,42 @@ flowchart LR
             P[Parser] --> G[Generator] --> R[Renderer]
         end
         Adapter[(OpenAPI<br/>Adapter)]
+        AIHandler[AI<br/>Handlers]
+    end
+
+    subgraph GenAI["GenAI Module"]
+        Client[LLMClient]
+        Provider[ChatCompletions<br/>Provider]
+        Schema[JSON Schemas]
     end
 
     FE -->|POST /generate| Route
+    FE -->|POST /ai/*| Route
     Route --> P
     Route -.->|/import/openapi| Adapter
+    Route -.->|/ai/*| AIHandler
     Adapter --> G
+    AIHandler --> Client
+    Client --> Provider
+    Provider -->|LLM API| Ext[External<br/>LLM API]
+    Schema --> Client
     R -.->|Response| FE
 
     style FE fill:#F8FAFC,stroke:#CBD5E0,stroke-width:1px,color:#1E293B
     style BE fill:#F8FAFC,stroke:#CBD5E0,stroke-width:1px,color:#1E293B
+    style GenAI fill:#F8FAFC,stroke:#CBD5E0,stroke-width:1px,color:#1E293B
     style Pipeline fill:#FFFFFF,stroke:#E2E8F0,stroke-width:1px,color:#1E293B
     classDef nodeFe fill:#F1F5F9,stroke:#64748B,color:#1E293B,stroke-width:1px
     classDef nodeBe fill:#334155,stroke:#1E293B,color:#F8FAFC,stroke-width:1px
     classDef nodePipe fill:#E2E8F0,stroke:#94A3B8,color:#1E293B,stroke-width:1px
-    class Editor,Output nodeFe
-    class Route nodeBe
+    classDef nodeGenAI fill:#E2E8F0,stroke:#94A3B8,color:#1E293B,stroke-width:1px
+    class Editor,Output,AIPanel nodeFe
+    class Route,AIHandler nodeBe
     class P,G,R nodePipe
+    class Client,Provider,Schema nodeGenAI
 ```
 
-### 📁 Project Structure
 
-```
-api-doc-generator/
-├── backend/                # Deno backend
-│   ├── main.ts            # Entry point
-│   ├── router.ts          # URLPattern routes
-│   ├── handlers/          # HTTP handlers
-│   ├── core/              # Parser + Generator + Renderer
-│   ├── adapters/          # OpenAPI adapter
-│   ├── middleware/        # Logger
-│   ├── shared/            # Shared utilities
-│   └── tests/
-├── frontend/              # React frontend
-│   ├── src/
-│   │   ├── components/
-│   │   ├── api/           # API client
-│   │   └── utils/
-│   └── vite.config.ts
-├── scripts/dev.sh         # Dev script
-├── Dockerfile
-└── docker-compose.yml
-```
 
 ### 🚀 Quick Start
 
@@ -95,8 +108,8 @@ api-doc-generator/
 ```bash
 ./scripts/dev.sh start      # Start both frontend & backend
 ./scripts/dev.sh status     # Check status
-./scripts/dev.sh stop       # Stop services
-./scripts/dev.sh restart    # Restart
+./scripts/dev.sh stop      # Stop services
+./scripts/dev.sh restart   # Restart
 ```
 
 Visit http://localhost:8080
@@ -140,6 +153,34 @@ POST /import/openapi?format=markdown
 # Send OpenAPI 3.0 JSON directly
 ```
 
+#### AI: Ping (test LLM connection)
+
+```bash
+POST /ai/ping
+# → { "ok": true, "reply": "...", "model": "...", "usage": {...} }
+```
+
+#### AI: Generate OpenAPI from natural language
+
+```bash
+POST /ai/generate-openapi
+Content-Type: application/json
+
+{
+  "description": "User management system with list users and get user by ID",
+  "scope": "document"
+}
+
+# → { "ok": true, "openapi": {...}, "scope": "document", "usage": {...}, "format_used": "json_schema" }
+```
+
+#### AI: Streaming generation
+
+```bash
+POST /ai/generate-openapi-stream
+# Server-Sent Events stream of generation progress
+```
+
 #### Health check
 
 ```bash
@@ -172,6 +213,13 @@ docker run -p 8080:8080 api-doc-generator
 |----------|---------|-------------|
 | `PORT` | 8080 | Server port |
 | `HOST` | 0.0.0.0 | Server host |
+| `OPENAI_API_KEY` | - | LLM API key (for AI features) |
+| `OPENAI_BASE_URL` | `https://apihub.agnes-ai.com/v1` | LLM API base URL |
+| `LLM_MODEL` | `agnes-2.0-flash` | LLM model name |
+| `LOG_LEVEL` | `info` | Log level |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,...` | CORS allowed origins |
+
+Copy `config/env.example` to `.env` and modify as needed.
 
 ### 🤝 Contributing
 
