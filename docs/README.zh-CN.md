@@ -223,6 +223,10 @@ docker run -p 8080:8080 api-doc-generator
 
 ### 🤝 贡献
 
+欢迎贡献！详见 [CONTRIBUTING.zh-CN.md](CONTRIBUTING.zh-CN.md) 了解开发环境搭建、代码规范和 PR 流程。
+
+查看 [路线图](ROADMAP.zh-CN.md) 了解项目未来规划。
+
 欢迎提交 Issue 和 Pull Request！
 
 ### 📄 许可证

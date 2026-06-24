@@ -223,6 +223,10 @@ Copy `config/env.example` to `.env` and modify as needed.
 
 ### 🤝 Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and the PR process.
+
+Check the [Roadmap](ROADMAP.md) to see what's planned.
+
 Issues and PRs are welcome!
 
 ### 📄 License
