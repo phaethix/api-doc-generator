@@ -48,10 +48,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </svg>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  出现错误
+                  An Error Occurred
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  应用程序遇到了意外错误
+                  The application encountered an unexpected error
                 </p>
               </div>
             </div>
@@ -59,7 +59,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             {this.state.error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
                 <p className="text-xs font-mono text-red-800 dark:text-red-300 break-words">
-                  {this.state.error.message || "未知错误"}
+                  {this.state.error.message || "Unknown error"}
                 </p>
               </div>
             )}
@@ -69,13 +69,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 onClick={this.handleReset}
                 className="flex-1 btn-primary text-sm py-2"
               >
-                重试
+                Retry
               </button>
               <button
                 onClick={() => window.location.reload()}
                 className="flex-1 btn-ghost text-sm py-2"
               >
-                刷新页面
+                Refresh Page
               </button>
             </div>
           </div>

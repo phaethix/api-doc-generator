@@ -58,7 +58,7 @@ export default function App() {
     showToast("info", "Generation cancelled");
   };
 
-  // 同步主题到 document.documentElement
+  // Sync theme to document.documentElement
   useEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
@@ -67,7 +67,7 @@ export default function App() {
     }
   }, [theme]);
 
-  // 全局错误捕获
+  // Global error capture
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       console.error("Global error caught:", event.error || event.message);
@@ -105,12 +105,12 @@ export default function App() {
       setInputError(null);
       setError(null);
       setIsLoading(true);
-      setOutputContent(""); // 清空之前的输出
+      setOutputContent(""); // Clear previous output
       setElapsedSeconds(0);
       setCharCount(0);
       setStreamingProgress("Connecting to AI service...");
 
-      // 创建 AbortController 用于取消
+      // Create AbortController for cancellation
       const abortController = new AbortController();
       abortRef.current = abortController;
 
@@ -125,13 +125,13 @@ export default function App() {
           "endpoint",
           (event: { type: string; [key: string]: unknown }) => {
             if (event.type === "delta") {
-              // 实时更新输出内容
+              // Update output content in real-time
               const content = event.content as string;
               setOutputContent((prev) => prev + content);
               setCharCount((prev) => prev + (content?.length ?? 0));
               setStreamingProgress("Generating OpenAPI specification...");
             } else if (event.type === "done") {
-              // 接收完整结果
+              // Receive complete result
               const result = event.result as {
                 openapi: unknown;
                 format_used: string;
@@ -142,7 +142,7 @@ export default function App() {
               };
               setStreamingProgress("Generation complete, formatting...");
             } else if (event.type === "error") {
-              // 捕获错误但不抛出，避免被 client.ts 的 catch 屏蔽
+              // Capture error but don't throw, to avoid being caught by client.ts catch block
               const message = event.message as string;
               streamError = new Error(message);
             }
@@ -150,12 +150,12 @@ export default function App() {
           abortController.signal,
         );
 
-        // 检查流处理过程中是否发生错误
+        // Check if error occurred during stream processing
         if (streamError) {
           throw streamError;
         }
 
-        // 使用类型断言，因为 TypeScript 无法跟踪回调函数中的变量修改
+        // Use type assertion since TypeScript cannot track variable modifications in callbacks
         if (finalResult !== null) {
           const result = finalResult as { openapi: unknown; format_used: string };
           const openapiJson = JSON.stringify(result.openapi, null, 2);
@@ -166,10 +166,10 @@ export default function App() {
         }
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : "AI generation failed";
-        // 保留已生成的内容，不清除 outputContent
+        // Keep generated content, do not clear outputContent
         if (e instanceof Error && e.message.includes("cancelled")) {
           setStreamingProgress("");
-          // 取消时不显示错误，已生成的内容保留
+          // Do not show error on cancellation, keep generated content
         } else {
           setError(errMsg);
           showToast("error", errMsg);
@@ -246,7 +246,7 @@ export default function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("success", "文件已下载");
+    showToast("success", "File downloaded");
   }, [outputContent, outputFormat]);
 
   const handleLoadSample = useCallback(() => {
@@ -254,7 +254,7 @@ export default function App() {
     setOutputContent("");
     setError(null);
     setInputError(null);
-    showToast("info", "已加载示例数据");
+    showToast("info", "Sample data loaded");
   }, [inputMode]);
 
   const handleClear = useCallback(() => {
@@ -364,7 +364,7 @@ export default function App() {
                     error={inputError}
                     placeholder={
                       inputMode === "spec"
-                        ? '例如：{\n  "info": { "title": "My API", "version": "1.0" },\n  "paths": {...}\n}'
+                        ? 'e.g. {\n  "info": { "title": "My API", "version": "1.0" },\n  "paths": {...}\n}'
                         : 'Paste OpenAPI 3.0 spec, e.g.:\n{\n  "openapi": "3.0.0",\n  "info": {...},\n  "paths": {...}\n}'
                     }
                     height="400px"
@@ -419,19 +419,19 @@ export default function App() {
                   className="w-full btn-primary py-3 text-base font-semibold"
                 >
                   {isLoading ? (
-                    <>
+                      <>
                       <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      生成中...
+                      Generating...
                     </>
                   ) : (
-                    <>
+                      <>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      生成文档
+                      Generate Document
                     </>
                   )}
                 </button>
@@ -442,7 +442,7 @@ export default function App() {
           {/* Right Panel - Output */}
           <div className="card flex flex-col p-4 h-full">
             <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">
-              {inputMode === "ai" ? "AI 生成的 OpenAPI 规范" : "输出结果"}
+              {inputMode === "ai" ? "AI Generated OpenAPI Spec" : "Output Result"}
             </h2>
             <div className="flex-1 min-h-[400px]">
               <OutputPanel
@@ -465,7 +465,7 @@ export default function App() {
         {/* Footer */}
         <footer className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            API 文档生成器 · 基于 Deno + React 构建 · 数据完全在本地处理，不会上传到任何服务器
+            API Doc Generator · Built with Deno + React · Data processed locally, never uploaded to any server
           </p>
         </footer>
       </main>

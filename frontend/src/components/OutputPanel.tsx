@@ -31,7 +31,7 @@ export function OutputPanel({
 }: OutputPanelProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // HTML 转义函数
+  // HTML escape function
   const escapeHtml = (s: string): string => {
     return s
       .replace(/&/g, "&amp;")
@@ -41,11 +41,11 @@ export function OutputPanel({
       .replace(/'/g, "&#39;");
   };
 
-  // 当 HTML 内容变更时，更新 iframe
+  // Update iframe when HTML content changes
   useEffect(() => {
     if (format !== "html" || !content) return;
 
-    // 延迟到下一帧确保 iframe 已挂载
+    // Delay to next frame to ensure iframe is mounted
     let timeoutId: number | null = null;
     let isCancelled = false;
 
@@ -66,7 +66,7 @@ export function OutputPanel({
       }
     };
 
-    // 使用 setTimeout 确保 iframe 已完全挂载
+    // Use setTimeout to ensure iframe is fully mounted
     timeoutId = window.setTimeout(updateIframe, 0);
 
     return () => {
@@ -77,33 +77,33 @@ export function OutputPanel({
     };
   }, [content, format]);
 
-  // JSON 语法高亮函数
+  // JSON syntax highlighting function
   const highlightJson = (jsonStr: string): string => {
-    // 转义 HTML 字符
+    // Escape HTML characters
     let escaped = escapeHtml(jsonStr);
-    // 高亮 JSON 语法
-    // 匹配字符串（键值对中的键或普通字符串值）
+    // Highlight JSON syntax
+    // Match strings (keys in key-value pairs or plain string values)
     escaped = escaped.replace(
       /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?/g,
       (match, str, colon, keyword) => {
         let cls = "json-number";
         let text = match;
         if (str !== undefined) {
-          // 字符串
+          // String
           if (colon !== undefined) {
-            // 这是键
+            // This is a key
             cls = "json-key";
           } else {
-            // 这是字符串值
+            // This is a string value
             cls = "json-string";
           }
           text = str;
         } else if (keyword !== undefined) {
-          // 关键字 true/false/null
+          // Keywords true/false/null
           cls = "json-keyword";
           text = keyword;
         } else {
-          // 数字
+          // Number
           text = match;
         }
         return `<span class="${cls}">${text}</span>`;
@@ -133,11 +133,11 @@ export function OutputPanel({
       <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
         <div className="w-10 h-10 border-3 border-primary-200 dark:border-primary-800 border-t-primary-600 rounded-full animate-spin mb-4" />
         <p className="text-sm">
-          {streamingProgress || "正在生成文档..."}
+          {streamingProgress || "Generating document..."}
         </p>
         {streaming && (
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            已生成 {charCount} 字符 · 用时 {elapsedSeconds}s
+            {charCount} chars generated · {elapsedSeconds}s elapsed
           </p>
         )}
       </div>
@@ -171,23 +171,23 @@ export function OutputPanel({
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <p className="text-sm">输入 API 规范后点击"生成文档"按钮</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">支持自定义格式和 OpenAPI 规范</p>
+        <p className="text-sm">Enter API specification and click "Generate Document"</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Supports custom format and OpenAPI spec</p>
       </div>
     );
   }
 
-  // HTML 格式：使用 iframe 展示完整 HTML 文档
+  // HTML format: use iframe to display full HTML document
   if (format === "html") {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            预览
+            Preview
             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">HTML</span>
             {elapsedSeconds > 0 && (
               <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                {charCount} 字符 · 用时 {elapsedSeconds}s
+                {charCount} chars · {elapsedSeconds}s elapsed
               </span>
             )}
           </span>
@@ -196,12 +196,12 @@ export function OutputPanel({
               <button
                 onClick={onCancel}
                 className="btn-ghost text-xs text-red-500"
-                title="取消生成"
+                title="Cancel generation"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                取消
+                Cancel
               </button>
             )}
             <button
@@ -210,28 +210,28 @@ export function OutputPanel({
                 if (newWindow) {
                   newWindow.document.write(content);
                   newWindow.document.close();
-                  newWindow.document.title = "API 文档 (HTML)";
+                  newWindow.document.title = "API Docs (HTML)";
                 }
               }}
               className="btn-ghost text-xs"
-              title="在新窗口中打开"
+              title="Open in new window"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-              打开
+              Open
             </button>
             <button onClick={onCopy} className="btn-ghost text-xs">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              复制
+              Copy
             </button>
             <button onClick={onDownload} className="btn-ghost text-xs">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              下载
+              Download
             </button>
           </div>
         </div>
@@ -239,69 +239,69 @@ export function OutputPanel({
           ref={iframeRef}
           className="flex-1 w-full border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
           sandbox="allow-same-origin"
-          title="HTML 预览"
+          title="HTML Preview"
         />
       </div>
     );
   }
 
-  // Markdown 或 JSON 格式
+  // Markdown or JSON format
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          预览
-          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-            {format === "markdown" ? "Markdown → HTML" : "JSON"}
-          </span>
-          {elapsedSeconds > 0 && (
+            Preview
             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-              {charCount} 字符 · 用时 {elapsedSeconds}s
+              {format === "markdown" ? "Markdown → HTML" : "JSON"}
             </span>
-          )}
-        </span>
-        <div className="flex gap-2">
-          {onCancel && streaming && (
+            {elapsedSeconds > 0 && (
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                {charCount} chars · {elapsedSeconds}s elapsed
+              </span>
+            )}
+          </span>
+          <div className="flex gap-2">
+            {onCancel && streaming && (
+              <button
+                onClick={onCancel}
+                className="btn-ghost text-xs text-red-500"
+                title="Cancel generation"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </button>
+            )}
             <button
-              onClick={onCancel}
-              className="btn-ghost text-xs text-red-500"
-              title="取消生成"
+              onClick={onCopy}
+              className="btn-ghost text-xs"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
-              取消
+              Copy
             </button>
-          )}
-          <button
-            onClick={onCopy}
-            className="btn-ghost text-xs"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-            复制
-          </button>
-          <button
-            onClick={onDownload}
-            className="btn-ghost text-xs"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            下载
-          </button>
-        </div>
+            <button
+              onClick={onDownload}
+              className="btn-ghost text-xs"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download
+            </button>
+          </div>
       </div>
       <div
         className="flex-1 overflow-auto markdown-body"

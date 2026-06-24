@@ -9,19 +9,19 @@ const formats: { value: OutputFormat; label: string; description: string; icon: 
   {
     value: "markdown",
     label: "Markdown",
-    description: "适合 README 和文档站点",
+    description: "Great for README and docs sites",
     icon: "M2 3h20v18H2V3zm2 2v14h16V5H4zm2 2h12v2H6V7zm0 4h12v2H6v-2zm0 4h8v2H6v-2z",
   },
   {
     value: "html",
     label: "HTML",
-    description: "可直接在浏览器中查看",
+    description: "View directly in browser",
     icon: "M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z",
   },
   {
     value: "json",
     label: "JSON",
-    description: "结构化数据，便于程序处理",
+    description: "Structured data for programmatic use",
     icon: "M4 2h16a2 2 0 012 2v16a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2zm0 4v12h16V6H4zm2 2h12v2H6V8zm0 4h12v2H6v-2z",
   },
 ];
@@ -29,7 +29,7 @@ const formats: { value: OutputFormat; label: string; description: string; icon: 
 export function FormatSelector({ value, onChange }: FormatSelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="label">输出格式</label>
+      <label className="label">Output Format</label>
       <div className="grid grid-cols-3 gap-2">
         {formats.map((f) => (
           <button
