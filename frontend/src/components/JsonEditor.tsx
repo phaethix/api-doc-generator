@@ -57,17 +57,17 @@ export function JsonEditor({
                 }
               }}
               className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-              title="格式化 JSON"
+              title="Format JSON"
             >
-              格式化
+              Format
             </button>
             <button
               type="button"
               onClick={() => onChange("")}
               className="text-xs text-gray-500 hover:text-gray-700"
-              title="清空"
+              title="Clear"
             >
-              清空
+              Clear
             </button>
           </div>
         </div>

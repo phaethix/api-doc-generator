@@ -49,7 +49,7 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">API 文档生成器</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">API Doc Generator</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">From Spec to Documentation</p>
           </div>
         </div>
@@ -67,17 +67,17 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
             />
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {healthLoading
-                ? "检查中..."
+                ? "Checking..."
                 : health
-                ? "服务正常"
-                : "服务异常"}
+                ? "Service OK"
+                : "Service Error"}
             </span>
           </div>
 
           <button
             onClick={onLoadSample}
             className="btn-ghost text-xs sm:text-sm"
-            title="加载示例"
+            title="Load Sample"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -87,13 +87,13 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
                 d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
-            <span className="hidden sm:inline">示例</span>
+            <span className="hidden sm:inline">Sample</span>
           </button>
 
           <button
             onClick={onClear}
             className="btn-ghost text-xs sm:text-sm"
-            title="清空"
+            title="Clear"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -103,13 +103,13 @@ export function Header({ onLoadSample, onClear, onToggleTheme, theme }: HeaderPr
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
               />
             </svg>
-            <span className="hidden sm:inline">清空</span>
+            <span className="hidden sm:inline">Clear</span>
           </button>
 
           <button
             onClick={onToggleTheme}
             className="btn-ghost text-xs sm:text-sm"
-            title="切换主题"
+            title="Toggle Theme"
           >
             {theme === "light" ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
