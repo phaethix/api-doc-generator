@@ -6,12 +6,14 @@
 
 ## 1. 背景与目标
 
-本项目（API Doc Generator）的目标是**以项目为载体学习 AI 开发**。阶段 1 的焦点是建立可复用、可测试的 LLM 客户端，覆盖以下能力：
+本项目（API Doc Generator）的目标是**以项目为载体学习 AI 开发**。阶段 1 建立可复用、可测试的 LLM 客户端，覆盖：
 
-- 调用 OpenAI 兼容协议（覆盖 OpenAI/Anthropic/Google/Ollama）
-- 统一错误类型
-- 类型安全（TypeScript strict mode）
-- 配置从 env 读取
+- OpenAI 兼容协议（Agnes AI / OpenAI / DeepSeek / Ollama…）
+- **错误分类**（auth / rate_limit / server / network / unknown）
+- **超时控制**（AbortController）
+- **请求校验**（空消息、参数范围）
+- **配置对象模式**（env + 显式配置）
+- 类型安全
 - 为后续流式输出、结构化输出、RAG 预留接口
 
 ## 2. 目录结构
@@ -19,203 +21,184 @@
 ```
 genai/                          # 顶层独立 AI 模块
 ├── deno.json                   # 独立依赖管理
-├── index.ts                    # 统一出口（re-export 公共 API）
-├── client.ts                   # LLMClient 主类
+├── index.ts                    # 公共 API 出口（工厂 + re-export）
+├── client.ts                   # LLMClient 主类（含请求校验）
 ├── types.ts                    # 统一类型定义
+├── errors.ts                   # LLMError + LLMConfigError
 ├── providers/
-│   ├── types.ts                # Provider 接口
-│   ├── openai.ts               # OpenAI 兼容协议实现
-│   └── index.ts                # Provider 工厂（预留）
-├── prompts/
-│   ├── enhance.ts              # 字段增强 Prompt（阶段 2 用到）
-│   └── chat.ts                 # 对话 Prompt（阶段 6 用到）
+│   └── chat_completions.ts     # OpenAI 兼容协议实现
 └── tests/
-    └── client_test.ts          # Mock Provider 测试
+    └── client_test.ts          # 12 个测试用例（mock + fetch shim）
 ```
 
-## 3. 类型定义（genai/types.ts）
+## 3. 核心类型（genai/types.ts）
 
 ```typescript
-export interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
+export type ChatRole = "system" | "user" | "assistant";
+
+export interface ChatMessage { role: ChatRole; content: string; }
 
 export interface ChatRequest {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
-  stream?: boolean;        // 阶段 3 启用
+  timeoutMs?: number;       // 单次请求超时
+  stream?: boolean;         // 阶段 3 启用
 }
 
-export interface ChatResponse {
-  content: string;
-  usage: { promptTokens: number; completionTokens: number };
-  model: string;
-}
+export interface Usage { promptTokens: number; completionTokens: number; }
 
-export interface Provider {
-  chat(req: ChatRequest): Promise<ChatResponse>;
-}
+export interface ChatResponse { content: string; usage: Usage; model: string; }
+
+export interface Provider { chat(req: ChatRequest): Promise<ChatResponse>; }
 ```
 
-## 4. LLMClient 主类（genai/client.ts）
+## 4. 错误分类（genai/errors.ts）
 
 ```typescript
-import type { ChatRequest, ChatResponse } from "./types.ts";
-import type { Provider } from "./providers/types.ts";
-
-export class LLMClient {
-  constructor(private provider: Provider) {}
-
-  async complete(req: ChatRequest): Promise<ChatResponse> {
-    return await this.provider.chat(req);
-  }
-}
-```
-
-## 5. OpenAI Provider（genai/providers/openai.ts）
-
-```typescript
-import type { ChatRequest, ChatResponse, Provider } from "./types.ts";
+export type LLMErrorCategory =
+  | "auth" | "rate_limit" | "server" | "network" | "unknown";
 
 export class LLMError extends Error {
-  constructor(message: string, public status?: number) {
-    super(message);
-    this.name = "LLMError";
-  }
-}
-
-export class OpenAIProvider implements Provider {
   constructor(
-    private apiKey: string,
-    private baseUrl = "https://api.openai.com/v1",
-    private model = "gpt-4o-mini",
-  ) {}
+    message: string,
+    public readonly category: LLMErrorCategory,
+    public readonly status?: number,
+    public readonly provider?: string,
+  ) { super(message); this.name = "LLMError"; }
+}
 
-  async chat(req: ChatRequest): Promise<ChatResponse> {
-    const resp = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: req.messages,
-        temperature: req.temperature ?? 0.7,
-        max_tokens: req.maxTokens,
-        stream: false,
-      }),
-    });
-
-    if (!resp.ok) {
-      throw new LLMError(`OpenAI API error: ${resp.status}`, resp.status);
-    }
-
-    const data = await resp.json();
-    return {
-      content: data.choices[0].message.content,
-      usage: {
-        promptTokens: data.usage?.prompt_tokens ?? 0,
-        completionTokens: data.usage?.completion_tokens ?? 0,
-      },
-      model: data.model,
-    };
-  }
+export class LLMConfigError extends Error {
+  constructor(message: string) { super(message); this.name = "LLMConfigError"; }
 }
 ```
 
-## 6. 工厂与配置（genai/index.ts）
+错误类别到 HTTP 状态码的映射位于 `backend/handlers/ai.ts`：
 
 ```typescript
-import { LLMClient } from "./client.ts";
-import { OpenAIProvider, LLMError } from "./providers/openai.ts";
-import type { Provider } from "./providers/types.ts";
-
-export function createLLMClient(): LLMClient {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) throw new Error("OPENAI_API_KEY env required");
-
-  const provider: Provider = new OpenAIProvider(
-    apiKey,
-    Deno.env.get("OPENAI_BASE_URL"),
-    Deno.env.get("LLM_MODEL") ?? "gpt-4o-mini",
-  );
-
-  return new LLMClient(provider);
-}
-
-export { LLMClient, OpenAIProvider, LLMError };
-export type * from "./types.ts";
+const STATUS_BY_CATEGORY: Record<LLMErrorCategory, number> = {
+  auth: 401, rate_limit: 429, server: 502, network: 503, unknown: 500,
+};
 ```
 
-## 7. 测试设计（genai/tests/client_test.ts）
+## 5. ChatCompletionsProvider（genai/providers/chat_completions.ts）
 
-使用 **Mock Provider** 验证客户端转发逻辑，不烧真实 token：
+关键设计：
+
+- **超时**：通过 `AbortController` + `setTimeout` 实现，错误归类为 `"network"`
+- **错误分类**：根据 HTTP 状态码映射到 `LLMErrorCategory`
+- **网络错误**：`fetch` 抛出的 `TypeError` 归类为 `"network"`
+- **防御性解析**：`choices?.[0]?.message?.content ?? ""`，兼容不同 provider
+
+## 6. LLMClient（genai/client.ts）
+
+请求校验：
+- 消息不能为空
+- `temperature` 必须在 [0, 2] 范围内
+- `maxTokens` 必须为正数
+
+## 7. 工厂模式（genai/index.ts）
 
 ```typescript
-import { LLMClient } from "../client.ts";
-import type { Provider, ChatRequest, ChatResponse } from "../types.ts";
-
-class MockProvider implements Provider {
-  constructor(private response: string) {}
-  async chat(_req: ChatRequest): Promise<ChatResponse> {
-    return { content: this.response, usage: { promptTokens: 10, completionTokens: 5 }, model: "mock" };
-  }
+export interface LLMClientConfig {
+  apiKey: string;
+  baseUrl?: string;       // 默认: https://apihub.agnes-ai.com/v1
+  model?: string;         // 默认: agnes-2.0-flash
+  timeoutMs?: number;     // 默认: 30000
 }
 
-Deno.test("LLMClient.complete returns content", async () => {
-  const client = new LLMClient(new MockProvider("hello"));
-  const res = await client.complete({ messages: [{ role: "user", content: "hi" }] });
-  if (res.content !== "hello") throw new Error("expected 'hello'");
-});
+// 用法：
+createLLMClient()                           // 全从 env
+createLLMClient({ apiKey: "..." })          // 显式 key，其余从 env
+createLLMClient({ timeoutMs: 60_000 })      // 只覆盖超时
 ```
 
-## 8. Backend 集成（backend/handlers/ai.ts）
+## 8. 测试覆盖（12 个用例）
+
+| 类别 | 测试用例 |
+|------|----------|
+| 转发 | 消息转发、参数透传（temperature/maxTokens） |
+| 校验 | 空消息、temperature 越界、maxTokens ≤ 0 |
+| 工厂 | 缺 key → LLMConfigError、显式配置、env fallback |
+| Provider | 成功响应解析、状态码分类（401/403/429/5xx/4xx）、超时、网络错误 |
+
+fetch shim 实现：通过替换 `globalThis.fetch` 模拟成功/失败/超时场景，无需真实网络。
+
+## 9. Backend 集成
+
+### 9.1 环境变量加载（backend/shared/env.ts）
 
 ```typescript
-import { createLLMClient } from "../../genai/index.ts";
+await loadProjectEnv({ from: import.meta.dirname });
+```
 
-export async function handleAIPing(req: Request): Promise<Response> {
+从调用方目录向上一级定位项目根 `.env`，注入到 `Deno.env`。
+
+### 9.2 AI Handler（backend/handlers/ai.ts）
+
+```typescript
+export async function handleAIPing(_req: Request): Promise<Response> {
   try {
     const client = createLLMClient();
-    const res = await client.complete({
-      messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: "Reply with just the word: pong" },
-      ],
-      temperature: 0,
-    });
-    return Response.json({ reply: res.content, usage: res.usage });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+    const res = await client.complete({ ... });
+    return Response.json({ ok: true, reply: res.content, ... });
+  } catch (err) {
+    if (err instanceof LLMError) {
+      const status = STATUS_BY_CATEGORY[err.category] ?? 500;
+      return Response.json({ ok: false, error: err.message, category: err.category }, { status });
+    }
+    // LLMConfigError 和其他异常 → 500
+    return Response.json({ ok: false, error: message }, { status: 500 });
   }
 }
 ```
-
-路由注册在 `backend/router.ts` 添加 `POST /ai/ping`。
-
-## 9. 实施步骤
-
-1. 切新分支：`feat/genai-llm-client`
-2. 创建 `genai/` 目录及文件
-3. 实现 LLMClient + OpenAIProvider
-4. 编写 mock 测试
-5. 集成到 backend：新增 `/ai/ping` 端点
-6. 运行 `cd genai && deno test -A` 验证
-7. 用真实 API Key 端到端验证 `curl localhost:8080/ai/ping`
-8. 按 conventional commits 规范 commit
 
 ## 10. 后续阶段预览
 
-| # | 阶段 | 对应功能 |
-|---|------|----------|
-| 1 | ✅ LLM 基础调用 | `/ai/ping` 端点 |
-| 2 | 结构化输出 | AI 严格输出 OpenAPI JSON |
-| 3 | Streaming | 润色过程打字机效果 |
-| 4 | Prompt 工程 | 不同 Prompt 质量对比 |
-| 5 | Token 优化 | 缓存、成本分析 |
-| 6 | RAG 基础 | 文档智能问答 |
-| 7 | RAG 进阶 | 混合检索 + Rerank |
-| 8 | Function Calling | AI 跳转接口、生成测试 |
+| # | 阶段 | 对应功能 | 状态 |
+|---|------|----------|------|
+| 1 | LLM 基础调用 | `/ai/ping` 端点，错误分类，超时控制 | ✅ 完成 |
+| 2 | 结构化输出 | AI 严格输出 OpenAPI JSON (JSON Schema / JSON Mode) | ✅ 完成 |
+| 3 | Streaming | 润色过程打字机效果 | 📋 待规划 |
+| 4 | Prompt 工程 | 不同 Prompt 质量对比 | 📋 待规划 |
+| 5 | Token 优化 | 缓存、成本分析 | 📋 待规划 |
+| 6 | RAG 基础 | 文档智能问答 | 📋 待规划 |
+| 7 | RAG 进阶 | 混合检索 + Rerank | 📋 待规划 |
+| 8 | Function Calling | AI 跳转接口、生成测试 | 📋 待规划 |
+
+## 11. 阶段 2 实施摘要（2026-06-24）
+
+### 11.1 新增文件
+- `genai/schemas/endpoint.ts` — 单 endpoint JSON Schema
+- `genai/schemas/document.ts` — 完整 OpenAPI 3.0.3 JSON Schema
+- `genai/schemas/index.ts` — 统一导出
+- `genai/openapi.ts` — `generateOpenAPIEndpoint` / `generateOpenAPIDocument` 高层 API
+- `genai/tests/openapi_test.ts` — 30 个测试用例（阶段 2 新增 18 个）
+
+### 11.2 修改文件
+- `genai/types.ts` — 加 `ResponseFormat`, `GenerateOpenAPIResult`, `OpenAPIScope`
+- `genai/providers/chat_completions.ts` — 序列化 `response_format`，捕获 400 响应体
+- `genai/index.ts` — 导出新阶段 API
+- `backend/handlers/ai.ts` — 新增 `handleAIGenerateOpenAPI`
+- `backend/router.ts` — 注册 `/ai/generate-openapi` 路由
+- `backend/main.ts` — 启动日志增加 AI 端点
+- `backend/tests/integration_test.ts` — 6 个新集成测试
+
+### 11.3 核心特性
+- **JSON Schema 强约束**：首选 `response_format.type=json_schema` + `strict: true`
+- **智能降级**：当 provider 不支持 `json_schema` 时，自动降级到 `json_object` + 本地 JSON Schema 校验
+- **错误诊断**：Provider 捕获 400 响应体，将 provider 的错误信息包含在 `LLMError.message` 中
+- **双粒度生成**：`scope: "endpoint"` 单接口，`scope: "document"` 完整 OpenAPI 3.0.3
+- **端到端兼容**：生成的 JSON 结构符合现有 `/generate` pipeline 的 `isApiSpec` 校验
+
+### 11.4 测试覆盖（合计 90 个）
+- genai: 30 个（12 阶段 1 + 18 阶段 2）
+- backend: 60 个（54 原有 + 6 新增 AI 端点测试）
+
+### 11.5 端到端验证
+```bash
+curl -X POST 'http://localhost:8080/ai/generate-openapi' \
+  -H 'Content-Type: application/json' \
+  -d '{"description": "用户管理系统，包含查询用户列表和根据ID查询用户详情两个接口", "scope": "document"}'
+```
+返回合法 OpenAPI 3.0.3 JSON，`format_used: "json_schema"`。

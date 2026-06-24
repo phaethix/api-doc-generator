@@ -30,11 +30,11 @@ export function markdownToHtml(md: string): string {
     if (inTable && tableRows.length > 0) {
       html.push('<table class="markdown-table">');
 
-      // 提取表头和数据行
+      // Extract table header and data rows
       const headerRow = tableRows[0];
       const dataRows = tableRows.slice(1);
 
-      // 生成 thead
+      // Generate thead
       if (headerRow && headerRow.isHeader) {
         html.push(
           `<thead><tr>${headerRow.cells
@@ -43,7 +43,7 @@ export function markdownToHtml(md: string): string {
         );
       }
 
-      // 生成 tbody
+      // Generate tbody
       if (dataRows.length > 0) {
         html.push("<tbody>");
         for (const row of dataRows) {
@@ -162,17 +162,17 @@ export function markdownToHtml(md: string): string {
     // Helper function to parse a table row
     const parseTableRow = (row: string): string[] => {
       let trimmed = row.trim();
-      // 去除首尾的 |
+      // Remove leading/trailing |
       if (trimmed.startsWith("|")) trimmed = trimmed.substring(1);
       if (trimmed.endsWith("|")) trimmed = trimmed.substring(0, trimmed.length - 1);
 
-      // 按 | 分割并去除每个单元格的空白
+      // Split by | and trim each cell
       return trimmed.split("|").map((cell) => cell.trim());
     };
 
     // Table detection
-    // 表格行格式: | col1 | col2 | col3 |
-    // 分隔行格式: | --- | --- | --- | 或 |:---:| ---: | :--- | 等
+    // Table row format: | col1 | col2 | col3 |
+    // Separator row format: | --- | --- | --- | or |:---:| ---: | :--- | etc.
     const isTableRow = (l: string): boolean => {
       const trimmed = l.trim();
       return trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length > 1;
@@ -182,7 +182,7 @@ export function markdownToHtml(md: string): string {
       return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(l);
     };
 
-    // 检查是否是表格的开始
+    // Check if this is the start of a table
     if (isTableRow(line) && lines[i + 1] && isSeparatorRow(lines[i + 1])) {
       closeList();
       closeBlockquote();
@@ -192,23 +192,23 @@ export function markdownToHtml(md: string): string {
         tableRows = [];
       }
 
-      // 解析表头行
+      // Parse header row
       const headerCells = parseTableRow(line);
       tableRows.push({ isHeader: true, cells: headerCells });
 
-      // 跳过分隔行
+      // Skip separator row
       i++;
       continue;
     }
 
-    // 在表格中继续处理表格数据行
+    // Continue processing table data rows
     if (inTable && isTableRow(line)) {
       const cells = parseTableRow(line);
       tableRows.push({ isHeader: false, cells: cells });
       continue;
     }
 
-    // 表格外的空行或未识别的行结束表格
+    // Empty or unrecognized lines outside table end the table
     if (inTable && (line.trim() === "" || !isTableRow(line))) {
       closeTable();
     }

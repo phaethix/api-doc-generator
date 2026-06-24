@@ -1,41 +1,41 @@
 export const sampleApiSpec = `{
   "info": {
-    "title": "示例 API",
+    "title": "Sample API",
     "version": "1.0.0",
-    "description": "这是一个示例 API 规范，用于演示文档生成器的功能"
+    "description": "A sample API specification for demonstrating the document generator"
   },
   "servers": [
-    { "url": "https://api.example.com", "description": "生产环境" }
+    { "url": "https://api.example.com", "description": "Production environment" }
   ],
   "tags": [
-    { "name": "用户管理", "description": "用户相关的所有接口" },
-    { "name": "文章管理", "description": "文章相关的所有接口" }
+    { "name": "User Management", "description": "All user-related endpoints" },
+    { "name": "Article Management", "description": "All article-related endpoints" }
   ],
   "paths": {
     "/users": {
       "get": {
-        "summary": "获取用户列表",
-        "description": "分页获取所有用户",
-        "tags": ["用户管理"],
+        "summary": "Get user list",
+        "description": "Get all users with pagination",
+        "tags": ["User Management"],
         "parameters": [
           {
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "页码，从 1 开始",
+            "description": "Page number, starting from 1",
             "schema": { "type": "integer" }
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "description": "每页数量，默认 20",
+            "description": "Items per page, default 20",
             "schema": { "type": "integer" }
           }
         ],
         "responses": {
           "200": {
-            "description": "成功返回用户列表",
+            "description": "Successfully returned user list",
             "content": {
               "application/json": {
                 "schema": { "type": "array", "items": { "type": "object" } }
@@ -45,11 +45,11 @@ export const sampleApiSpec = `{
         }
       },
       "post": {
-        "summary": "创建新用户",
-        "tags": ["用户管理"],
+        "summary": "Create new user",
+        "tags": ["User Management"],
         "requestBody": {
           "required": true,
-          "description": "用户信息",
+          "description": "User information",
           "content": {
             "application/json": {
               "schema": { "type": "object" }
@@ -58,67 +58,67 @@ export const sampleApiSpec = `{
         },
         "responses": {
           "201": {
-            "description": "用户创建成功",
+            "description": "User created successfully",
             "content": {
               "application/json": {
                 "schema": { "type": "object" }
               }
             }
           },
-          "400": { "description": "请求参数无效" }
+          "400": { "description": "Invalid request parameters" }
         }
       }
     },
     "/users/{id}": {
       "get": {
-        "summary": "获取用户详情",
-        "tags": ["用户管理"],
+        "summary": "Get user details",
+        "tags": ["User Management"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "用户 ID",
+            "description": "User ID",
             "schema": { "type": "string" }
           }
         ],
         "responses": {
           "200": {
-            "description": "成功返回用户详情",
+            "description": "Successfully returned user details",
             "content": {
               "application/json": {
                 "schema": { "type": "object" }
               }
             }
           },
-          "404": { "description": "用户不存在" }
+          "404": { "description": "User not found" }
         }
       },
       "delete": {
-        "summary": "删除用户",
-        "tags": ["用户管理"],
+        "summary": "Delete user",
+        "tags": ["User Management"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "用户 ID",
+            "description": "User ID",
             "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": { "description": "删除成功" },
-          "404": { "description": "用户不存在" }
+          "204": { "description": "Successfully deleted" },
+          "404": { "description": "User not found" }
         }
       }
     },
     "/articles": {
       "get": {
-        "summary": "获取文章列表",
-        "tags": ["文章管理"],
+        "summary": "Get article list",
+        "tags": ["Article Management"],
         "responses": {
           "200": {
-            "description": "成功返回文章列表",
+            "description": "Successfully returned article list",
             "content": {
               "application/json": {
                 "schema": { "type": "array" }
@@ -136,15 +136,15 @@ export const sampleOpenAPI = `{
   "info": {
     "title": "Pet Store API",
     "version": "1.0.0",
-    "description": "一个简单的宠物商店 API"
+    "description": "A simple pet store API"
   },
   "paths": {
     "/pets": {
       "get": {
-        "summary": "列出所有宠物",
+        "summary": "List all pets",
         "responses": {
           "200": {
-            "description": "成功",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": { "type": "array" }
