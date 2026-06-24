@@ -61,6 +61,8 @@ export interface ChatResponse {
 // The LLMClient only depends on this abstraction.
 export interface Provider {
   chat(req: ChatRequest): Promise<ChatResponse>;
+  /** Streaming: returns a ReadableStream of text deltas (SSE-encoded). */
+  streamChat?(req: ChatRequest): Promise<ReadableStream<string>>;
 }
 
 // OpenAPI generator output

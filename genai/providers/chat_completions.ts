@@ -5,8 +5,6 @@
 //   - Agnes AI (https://apihub.agnes-ai.com/v1)
 //   - OpenAI  (https://api.openai.com/v1)
 //   - DeepSeek, Qwen, Moonshot, local Ollama, …
-//
-// Switching providers = changing baseUrl + model, no code changes.
 
 import type { ChatRequest, ChatResponse, Provider } from "../types.ts";
 import { LLMError, type LLMErrorCategory } from "../errors.ts";
@@ -35,9 +33,6 @@ export class ChatCompletionsProvider implements Provider {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    // Build the request body. We add `response_format` only when the caller
-    // asked for structured output — passing it when type:"text" is harmless
-    // but unnecessary and some providers warn about it.
     const body: Record<string, unknown> = {
       model: this.model,
       messages: req.messages,
@@ -63,23 +58,18 @@ export class ChatCompletionsProvider implements Provider {
       });
 
       if (!resp.ok) {
-        // Capture the response body so that error messages contain the
-        // provider's explanation (e.g. "response_format is not supported").
-        // This enables intelligent fallback in the openapi.ts layer.
         const errorBody = await safeReadText(resp);
         throw this.toLLMError(resp.status, resp.statusText, errorBody);
       }
 
       const data = await resp.json();
 
-      // Defensive parsing: providers may return slightly different shapes.
       const content = data.choices?.[0]?.message?.content ?? "";
       const usage = {
         promptTokens: data.usage?.prompt_tokens ?? 0,
         completionTokens: data.usage?.completion_tokens ?? 0,
       };
 
-      // Echo back the format the caller requested (or "text" if none).
       const formatUsed: ChatResponse["formatUsed"] =
         req.responseFormat?.type ?? "text";
 
@@ -90,10 +80,7 @@ export class ChatCompletionsProvider implements Provider {
         formatUsed,
       };
     } catch (err) {
-      // Re-throw LLMError as-is (already categorized).
       if (err instanceof LLMError) throw err;
-
-      // Timeout → network error.
       if (err instanceof DOMException && err.name === "AbortError") {
         throw new LLMError(
           `Request timed out after ${timeoutMs}ms`,
@@ -102,8 +89,6 @@ export class ChatCompletionsProvider implements Provider {
           this.name,
         );
       }
-
-      // Anything else (DNS, connection refused, …) is a network error.
       const message = err instanceof Error ? err.message : String(err);
       throw new LLMError(
         `Network error: ${message}`,
@@ -116,7 +101,76 @@ export class ChatCompletionsProvider implements Provider {
     }
   }
 
-// Internals
+  async streamChat(req: ChatRequest): Promise<ReadableStream<string>> {
+    const url = `${this.baseUrl}/chat/completions`;
+    const timeoutMs = req.timeoutMs ?? this.options.timeoutMs ?? 30_000;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages: req.messages,
+      temperature: req.temperature ?? 0.7,
+      max_tokens: req.maxTokens,
+      stream: true,
+    };
+    if (req.responseFormat && req.responseFormat.type !== "text") {
+      body.response_format = req.responseFormat.type === "json_schema"
+        ? { type: "json_schema", json_schema: req.responseFormat.json_schema }
+        : { type: "json_object" };
+    }
+
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const errorBody = await safeReadText(resp);
+        throw this.toLLMError(resp.status, resp.statusText, errorBody);
+      }
+
+      const sseStream = resp.body;
+      if (!sseStream) {
+        throw new LLMError(
+          "Provider did not return a stream",
+          "unknown",
+          undefined,
+          this.name,
+        );
+      }
+
+      return parseSSEStream(sseStream, this.name);
+    } catch (err) {
+      if (err instanceof LLMError) throw err;
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new LLMError(
+          `Request timed out after ${timeoutMs}ms`,
+          "network",
+          undefined,
+          this.name,
+        );
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      throw new LLMError(
+        `Network error: ${message}`,
+        "network",
+        undefined,
+        this.name,
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Internals
   private toLLMError(status: number, statusText: string, body?: string): LLMError {
     const category = categorizeStatus(status);
     const message = formatErrorMessage(category, status, statusText, body);
@@ -152,7 +206,6 @@ function formatErrorMessage(
     }
   })();
 
-  // Append a short snippet of the provider's own error body for diagnostics.
   if (body) {
     const snippet = body.length > 300 ? body.slice(0, 300) + "…" : body;
     return `${base} Provider says: ${snippet}`;
@@ -168,4 +221,84 @@ async function safeReadText(resp: Response): Promise<string> {
   } catch {
     return "";
   }
+}
+
+/**
+ * Parse an SSE (Server-Sent Events) stream from an OpenAI-compatible provider
+ * and return a ReadableStream<string> of text deltas.
+ *
+ * SSE format:
+ *   data: {"choices":[{"delta":{"content":"hello"}}]}
+ *   data: [DONE]
+ */
+function parseSSEStream(
+  stream: ReadableStream<Uint8Array>,
+  providerName: string,
+): ReadableStream<string> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  return new ReadableStream<string>({
+    async pull(controller) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            // Flush any remaining buffer content
+            const remaining = buffer.trim();
+            if (remaining.startsWith("data:")) {
+              const data = remaining.slice(5).trim();
+              if (data !== "[DONE]") {
+                try {
+                  const parsed = JSON.parse(data);
+                  const delta = parsed.choices?.[0]?.delta?.content;
+                  if (delta) controller.enqueue(delta);
+                } catch {
+                  // ignore unparseable chunks
+                }
+              }
+            }
+            controller.close();
+            return;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          // Keep the last (potentially incomplete) line in the buffer
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const data = trimmed.slice(5).trim();
+            if (data === "[DONE]") {
+              controller.close();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) controller.enqueue(delta);
+            } catch {
+              // Not a JSON chunk or no content delta — skip
+            }
+          }
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        controller.error(
+          new LLMError(
+            `SSE stream error: ${message}`,
+            "unknown",
+            undefined,
+            providerName,
+          ),
+        );
+      }
+    },
+    cancel() {
+      reader.cancel();
+    },
+  });
 }

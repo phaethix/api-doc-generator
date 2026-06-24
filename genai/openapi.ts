@@ -10,7 +10,7 @@
 // Both try `response_format: json_schema` first (strictest) and fall back to
 // `json_object` + local validation if the provider rejects the schema.
 
-import { LLMClient, LLMError, type LLMErrorCategory } from "./index.ts";
+import { LLMClient, LLMError } from "./index.ts";
 import type { ChatRequest, ChatResponse, GenerateOpenAPIResult, OpenAPIScope, ResponseFormat } from "./types.ts";
 import { endpointSchema, documentSchema, ENDPOINT_SCHEMA_NAME, DOCUMENT_SCHEMA_NAME } from "./schemas/index.ts";
 
@@ -386,3 +386,114 @@ function inferPathFromSummary(summary: string): string {
 // know about the schemas module.
 export { ENDPOINT_SCHEMA_NAME, DOCUMENT_SCHEMA_NAME };
 export { endpointSchema, documentSchema } from "./schemas/index.ts";
+
+// Streaming support
+
+/** A single event emitted while streaming an OpenAPI generation. */
+export type OpenAPIStreamEvent =
+  | { type: "delta"; content: string }
+  | { type: "done"; result: GenerateOpenAPIResult }
+  | { type: "error"; message: string; category?: string };
+
+/**
+ * Stream an OpenAPI endpoint generation.
+ *
+ * Returns a ReadableStream of OpenAPIStreamEvent. The backend SSE handler
+ * pipes these events directly to the client.
+ */
+export async function generateOpenAPIEndpointStream(
+  client: LLMClient,
+  description: string,
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+): Promise<ReadableStream<OpenAPIStreamEvent>> {
+  return generateOpenAPIStream({
+    client,
+    description,
+    scope: "endpoint",
+    temperature: options.temperature,
+    maxTokens: options.maxTokens,
+    timeoutMs: options.timeoutMs,
+  });
+}
+
+/**
+ * Stream a complete OpenAPI document generation.
+ */
+export async function generateOpenAPIDocumentStream(
+  client: LLMClient,
+  description: string,
+  options: { temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+): Promise<ReadableStream<OpenAPIStreamEvent>> {
+  return generateOpenAPIStream({
+    client,
+    description,
+    scope: "document",
+    temperature: options.temperature,
+    maxTokens: options.maxTokens,
+    timeoutMs: options.timeoutMs,
+  });
+}
+
+// Internal: shared streaming implementation
+async function generateOpenAPIStream(
+  opts: GenerateOpts,
+): Promise<ReadableStream<OpenAPIStreamEvent>> {
+  const { client, description, scope, temperature, maxTokens, timeoutMs } = opts;
+
+  const systemPrompt = scope === "endpoint" ? ENDPOINT_SYSTEM_PROMPT : DOCUMENT_SYSTEM_PROMPT;
+  const extractedPath = extractPathFromDescription(description);
+
+  let pathDirective = "";
+  if (extractedPath) {
+    pathDirective = `\n\nCRITICAL: The URL path is "${extractedPath}". Use it exactly.`;
+  }
+
+  const userPrompt = `Description: ${description}\n\nProduce JSON now — no explanation.${pathDirective}`;
+
+  // Use json_object for streaming (json_schema + stream not universally supported).
+  const request: ChatRequest = {
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: temperature ?? 0.2,
+    maxTokens: maxTokens ?? (scope === "document" ? 4000 : 1000),
+    responseFormat: { type: "json_object" },
+    timeoutMs,
+  };
+
+  let accumulated = "";
+
+  return new ReadableStream<OpenAPIStreamEvent>({
+    async start(controller) {
+      try {
+        const stream = await client.streamComplete(request);
+        const reader = stream.getReader();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += value;
+          controller.enqueue({ type: "delta", content: value });
+        }
+
+        // Stream finished — parse and validate the full accumulated text.
+        const parsed = parseAndValidate(accumulated, scope, extractedPath);
+        const result: GenerateOpenAPIResult = {
+          openapi: parsed,
+          scope,
+          formatUsed: "json_object",
+          usage: { promptTokens: 0, completionTokens: 0 }, // usage unavailable in stream
+          model: "",
+        };
+        controller.enqueue({ type: "done", result });
+        controller.close();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const category = err instanceof LLMError ? err.category : undefined;
+        controller.enqueue({ type: "error", message, category });
+        controller.close();
+      }
+    },
+  });
+}

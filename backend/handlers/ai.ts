@@ -9,6 +9,8 @@ import {
   LLMConfigError,
   generateOpenAPIEndpoint,
   generateOpenAPIDocument,
+  generateOpenAPIEndpointStream,
+  generateOpenAPIDocumentStream,
   type LLMErrorCategory,
   type OpenAPIScope,
 } from "../../genai/index.ts";
@@ -110,6 +112,78 @@ export async function handleAIGenerateOpenAPI(req: Request): Promise<Response> {
   } catch (err) {
     return toErrorResponse(err);
   }
+}
+
+// /ai/generate-openapi-stream  (SSE streaming)
+
+export async function handleAIGenerateOpenAPIStream(req: Request): Promise<Response> {
+  let body: GenerateOpenAPIBody;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json(
+      { ok: false, error: "Invalid JSON body" },
+      { status: 400 },
+    );
+  }
+
+  if (!body.description || typeof body.description !== "string" || body.description.trim().length === 0) {
+    return Response.json(
+      { ok: false, error: "Field 'description' is required and must be a non-empty string" },
+      { status: 400 },
+    );
+  }
+
+  const scope: OpenAPIScope = body.scope ?? "endpoint";
+
+  // Create a ReadableStream that emits SSE events.
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enqueue = (data: string) => {
+        controller.enqueue(new TextEncoder().encode(data));
+      };
+
+      try {
+        const client = createLLMClient();
+        const eventStream = scope === "endpoint"
+          ? await generateOpenAPIEndpointStream(client, body.description.trim(), {
+              temperature: body.temperature,
+              maxTokens: body.maxTokens,
+              timeoutMs: body.timeoutMs,
+            })
+          : await generateOpenAPIDocumentStream(client, body.description.trim(), {
+              temperature: body.temperature,
+              maxTokens: body.maxTokens,
+              timeoutMs: body.timeoutMs,
+            });
+
+        const reader = eventStream.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const line = `data: ${JSON.stringify(value)}\n\n`;
+          enqueue(line);
+        }
+
+        controller.close();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const category = err instanceof LLMError ? err.category : undefined;
+        const line = `data: ${JSON.stringify({ type: "error", message, category })}\n\n`;
+        enqueue(line);
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
 }
 
 // Error normalization

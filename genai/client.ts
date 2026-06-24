@@ -20,6 +20,19 @@ export class LLMClient {
     return await this.provider.chat(req);
   }
 
+  /**
+   * Stream a chat completion request, returning a ReadableStream of text deltas.
+   *
+   * Throws if the provider does not support streaming.
+   */
+  async streamComplete(req: ChatRequest): Promise<ReadableStream<string>> {
+    this.validate(req);
+    if (!this.provider.streamChat) {
+      throw new Error("LLMClient: provider does not support streaming");
+    }
+    return await this.provider.streamChat(req);
+  }
+
   // Request validation
   private validate(req: ChatRequest): void {
     if (!req.messages || req.messages.length === 0) {

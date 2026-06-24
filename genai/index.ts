@@ -49,6 +49,9 @@ export type { ChatCompletionsOptions };
 export {
   generateOpenAPIEndpoint,
   generateOpenAPIDocument,
+  generateOpenAPIEndpointStream,
+  generateOpenAPIDocumentStream,
+  type OpenAPIStreamEvent,
   ENDPOINT_SCHEMA_NAME,
   DOCUMENT_SCHEMA_NAME,
   endpointSchema,
